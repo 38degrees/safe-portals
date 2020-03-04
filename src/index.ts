@@ -18,9 +18,11 @@ const parseError = (wanted: string, got: any): never => {
   throw new ParseError(wanted, got)
 }
 
-type UntypedJson = string | number | boolean | null | UntypedJson[] | { [key: string]: UntypedJson };
-type Reader<T> = (o: UntypedJson) => T;
-type Writer<T> = (t: T) => UntypedJson;
+type Jsonifyable = any;
+// ^^ purely documentary type. Not really useful to do right, but the following would be 'correct' (and requires TS 3.7+)
+// type Jsonifyable = string | number | boolean | null | Jsonifyable[] | { [key: string]: Jsonifyable };
+type Reader<T> = (o: Jsonifyable) => T;
+type Writer<T> = (t: T) => Jsonifyable;
 interface SafeSerializer<T> { read: Reader<T>; write: Writer<T>; }
 
 export interface Tuple<T> extends SafeSerializer<T> { container: 'tuple' }
@@ -37,7 +39,7 @@ export type TypeEncapsulatedBy<T extends SafeSerializer<any>> = ReturnType<T['re
 
 export const date: Type<Date> = {
   container: 'none',
-  read: (o: UntypedJson): Date => {
+  read: (o: Jsonifyable): Date => {
     const d = new Date(o ? o.toString() : '');
     return isNaN(d.getTime()) ? parseError('date', o) : d;
   },
@@ -46,7 +48,7 @@ export const date: Type<Date> = {
 
 export const str: Type<string> = {
   container: 'none',
-  read: (o: UntypedJson): string => {
+  read: (o: Jsonifyable): string => {
     return typeof o == 'string' ? o : parseError('string', o);
   },
   write: t => t
@@ -91,16 +93,16 @@ export const raw: Type<any> = {
 export function optional<T>(s: Type<T>): Type<T | undefined> {
   return {
     container: 'none',
-    read: (o: UntypedJson): T | undefined => o == null ? undefined : s.read(o),
-    write: (t: T | undefined): UntypedJson => t == null ? null : s.write(t)
+    read: (o: Jsonifyable): T | undefined => o == null ? undefined : s.read(o),
+    write: (t: T | undefined): Jsonifyable => t == null ? null : s.write(t)
   }
 }
 
 export function nullable<T>(s: Type<T>): Type<T | null> {
   return {
     container: 'none',
-    read: (o: UntypedJson): T | null => o == null ? null : s.read(o),
-    write: (t: T | null): UntypedJson => t == null ? null : s.write(t)
+    read: (o: Jsonifyable): T | null => o == null ? null : s.read(o),
+    write: (t: T | null): Jsonifyable => t == null ? null : s.write(t)
   }
 }
 
@@ -110,7 +112,7 @@ export function array<T>(s: Type<T>): List<T[]> {
     read: (o: any): T[] => {
       return o instanceof Array ? o.map(s.read) : parseError('array', o);
     },
-    write: (o: T[]): UntypedJson => o.map(s.write)
+    write: (o: T[]): Jsonifyable => o.map(s.write)
   }
 }
 
@@ -120,7 +122,7 @@ export function obj<T extends Record<string, Type<any>>>(def: T)
   type R = { [key in keyof T]: TypeEncapsulatedBy<T[key]> };
   return {
     container: 'obj',
-    read: (o: UntypedJson): R => {
+    read: (o: Jsonifyable): R => {
       const out: any = {};
       for (let key of Object.keys(def)) {
         if (o instanceof Object && !(o instanceof Array)) {
@@ -131,7 +133,7 @@ export function obj<T extends Record<string, Type<any>>>(def: T)
       }
       return out;
     },
-    write: (r: R): UntypedJson => {
+    write: (r: R): Jsonifyable => {
       const out: any = {};
       for (let key of Object.keys(def)) {
         out[key] = def[key].write(r[key]);
@@ -147,13 +149,13 @@ export function tuple<T extends Array<SafeSerializer<any>>>(...def: T)
   type R = { [key in keyof T]: T[key] extends SafeSerializer<any> ? TypeEncapsulatedBy<T[key]> : never };
   return {
     container: 'tuple',
-    read: (o: UntypedJson): R => {
+    read: (o: Jsonifyable): R => {
       if (o instanceof Array) {
         return def.map((d, i) => d.read(o[i])) as any;
       } else {
         return parseError('an array', o);
       }
     },
-    write: (r: R): UntypedJson => def.map((d, i) => d.write(r[i]))
+    write: (r: R): Jsonifyable => def.map((d, i) => d.write(r[i]))
   }
 }
