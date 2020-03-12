@@ -29,7 +29,10 @@ export interface Tuple<T> extends SafeSerializer<T> { container: 'tuple' }
 export interface Value<T> extends SafeSerializer<T> { container: 'none' }
 export interface List<T> extends SafeSerializer<T> { container: 'list' }
 export interface Obj<T> extends SafeSerializer<T> { container: 'obj' }
-export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T>;
+export interface DateIso<T> extends SafeSerializer<T> { container: 'dateIso' }
+export interface DateUnixSecs<T> extends SafeSerializer<T> { container: 'dateUnixSecs' }
+export interface DateUnixMillis<T> extends SafeSerializer<T> { container: 'dateUnixMillis' }
+export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | DateUnixSecs<T> | DateUnixMillis<T>;
 
 /**
  * useful for getting the TS type that a safe serializer operates on.
@@ -37,20 +40,29 @@ export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T>;
  */
 export type TypeEncapsulatedBy<T extends SafeSerializer<any>> = ReturnType<T['read']>;
 
-export const unixdate: Type<Date> = {
+export const dateUnixSecs: Type<Date> = {
   container: 'none',
   read: (o: Jsonifyable): Date => {
     const d = new Date(parseFloat(o) * 1000.0);
-    return isNaN(d.getTime()) ? parseError('unixdate', o) : d;
+    return isNaN(d.getTime()) ? parseError('dateUnixSecs', o) : d;
   },
   write: t => t.getTime() / 1000.0
 };
 
-export const isodate: Type<Date> = {
+export const dateUnixMillis: Type<Date> = {
+  container: 'none',
+  read: (o: Jsonifyable): Date => {
+    const d = new Date(parseFloat(o));
+    return isNaN(d.getTime()) ? parseError('dateUnixMillis', o) : d;
+  },
+  write: t => t.getTime()
+};
+
+export const dateIso: Type<Date> = {
   container: 'none',
   read: (o: Jsonifyable): Date => {
     const d = new Date(o ? o.toString() : '');
-    return isNaN(d.getTime()) ? parseError('isodate', o) : d;
+    return isNaN(d.getTime()) ? parseError('dateIso', o) : d;
   },
   write: t => t.toISOString()
 };

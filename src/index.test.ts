@@ -41,19 +41,27 @@ describe('Type-safe composable serializers', () => {
     expect(() => s.read({})).toThrowError(Safe.ParseError);
   });
 
-  test('isodate', () => {
+  test('dateIso', () => {
     const d = new Date();
-    expect(Safe.isodate.read(Safe.isodate.write(d))).toEqual(d);
-    expect(() => Safe.isodate.read('blah')).toThrowError(Safe.ParseError);
-    expect(() => Safe.isodate.read(null)).toThrowError(Safe.ParseError);
+    expect(Safe.dateIso.read(Safe.dateIso.write(d))).toEqual(d);
+    expect(() => Safe.dateIso.read('blah')).toThrowError(Safe.ParseError);
+    expect(() => Safe.dateIso.read(null)).toThrowError(Safe.ParseError);
   });
 
-  test('unixdate', () => {
+  test('dateUnixSecs', () => {
     const d = new Date();
-    expect(Safe.unixdate.read(123456789.0)).toEqual(new Date(123456789000));
-    expect(Safe.unixdate.read(Safe.unixdate.write(d))).toEqual(d);
-    expect(() => Safe.unixdate.read('blah')).toThrowError(Safe.ParseError);
-    expect(() => Safe.unixdate.read(null)).toThrowError(Safe.ParseError);
+    expect(Safe.dateUnixSecs.read(123456789.0)).toEqual(new Date(123456789000));
+    expect(Safe.dateUnixSecs.read(Safe.dateUnixSecs.write(d))).toEqual(d);
+    expect(() => Safe.dateUnixSecs.read('blah')).toThrowError(Safe.ParseError);
+    expect(() => Safe.dateUnixSecs.read(null)).toThrowError(Safe.ParseError);
+  });
+
+  test('dateUnixMillis', () => {
+    const d = new Date();
+    expect(Safe.dateUnixMillis.read(123456789.0)).toEqual(new Date(123456789));
+    expect(Safe.dateUnixMillis.read(Safe.dateUnixMillis.write(d))).toEqual(d);
+    expect(() => Safe.dateUnixMillis.read('blah')).toThrowError(Safe.ParseError);
+    expect(() => Safe.dateUnixMillis.read(null)).toThrowError(Safe.ParseError);
   });
 
   test('raw', () => {
