@@ -37,11 +37,20 @@ export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T>;
  */
 export type TypeEncapsulatedBy<T extends SafeSerializer<any>> = ReturnType<T['read']>;
 
-export const date: Type<Date> = {
+export const unixdate: Type<Date> = {
+  container: 'none',
+  read: (o: Jsonifyable): Date => {
+    const d = new Date(parseFloat(o) * 1000.0);
+    return isNaN(d.getTime()) ? parseError('unixdate', o) : d;
+  },
+  write: t => t.getTime() / 1000.0
+};
+
+export const isodate: Type<Date> = {
   container: 'none',
   read: (o: Jsonifyable): Date => {
     const d = new Date(o ? o.toString() : '');
-    return isNaN(d.getTime()) ? parseError('date', o) : d;
+    return isNaN(d.getTime()) ? parseError('isodate', o) : d;
   },
   write: t => t.toISOString()
 };
