@@ -29,10 +29,11 @@ export interface Tuple<T> extends SafeSerializer<T> { container: 'tuple' }
 export interface Value<T> extends SafeSerializer<T> { container: 'none' }
 export interface List<T> extends SafeSerializer<T> { container: 'list' }
 export interface Obj<T> extends SafeSerializer<T> { container: 'obj' }
+export interface SumType<T> extends SafeSerializer<T> { container: 'sumtype' }
 export interface DateIso<T> extends SafeSerializer<T> { container: 'dateIso' }
 export interface DateUnixSecs<T> extends SafeSerializer<T> { container: 'dateUnixSecs' }
 export interface DateUnixMillis<T> extends SafeSerializer<T> { container: 'dateUnixMillis' }
-export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | DateUnixSecs<T> | DateUnixMillis<T>;
+export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | DateUnixSecs<T> | DateUnixMillis<T> | SumType<T>;
 
 /**
  * useful for getting the TS type that a safe serializer operates on.
@@ -178,5 +179,22 @@ export function tuple<T extends Array<SafeSerializer<any>>>(...def: T)
       }
     },
     write: (r: R): Jsonifyable => def.map((d, i) => d.write(r[i]))
+  }
+}
+
+export function oneOf<T>(def: T)
+  : SumType<keyof T>
+{
+  type R = keyof T;
+  return {
+    container: 'sumtype',
+    read: (o: Jsonifyable): R => {
+      if (Object.keys(def).indexOf(o) != -1) {
+        return o;
+      } else {
+        return parseError(`one of ${Object.keys(def)}`, o);
+      }
+    },
+    write: (t: R) => t,
   }
 }

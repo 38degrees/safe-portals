@@ -83,4 +83,10 @@ describe('Type-safe composable serializers', () => {
     expect(Safe.float.read(Safe.float.write(123.45))).toEqual(123.45);
     expect(() => Safe.float.read("erm")).toThrowError(Safe.ParseError);
   });
+
+  test('sumtype (oneOf)', () => {
+    const s = Safe.oneOf({a:'', b:''});
+    expect(s.read('a')).toEqual('a');
+    expect(() => s.read('c')).toThrowError(Safe.ParseError);
+  });
 });
