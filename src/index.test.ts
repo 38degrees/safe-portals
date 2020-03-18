@@ -89,4 +89,30 @@ describe('Type-safe composable serializers', () => {
     expect(s.read('a')).toEqual('a');
     expect(() => s.read('c')).toThrowError(Safe.ParseError);
   });
+
+  test('variant', () => {
+    const s = Safe.variant(
+      'circle', Safe.obj({ radius: Safe.float }),
+      'person', Safe.obj({ name: Safe.str }),
+    );
+    type T = Safe.TypeEncapsulatedBy<typeof s>;
+    const testPerson: T = {type: 'person', name: 'Bob'};
+    const testCircle: T = {type: 'circle', radius: 2};
+
+    expect(
+      s.read(s.write(testPerson))
+    ).toEqual(
+      testPerson
+    );
+
+    expect(
+      s.read(s.write(testCircle))
+    ).toEqual(
+      testCircle
+    );
+
+    expect(
+      () => s.read({type: 'blah'})
+    ).toThrowError(Safe.ParseError);
+  });
 });

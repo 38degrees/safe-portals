@@ -7,7 +7,7 @@
  */
 export class ParseError extends Error {
   constructor(wanted: string, got: any) {
-    super(`Parse error: expected ${wanted} but found '${got}'`);
+    super(`Parse error: expected ${wanted} but found ${JSON.stringify(got)}`);
     // needed because JS is silly
     // @ts-ignore
     Object.setPrototypeOf(this, ParseError.prototype);
@@ -196,5 +196,242 @@ export function oneOf<T>(def: T)
       }
     },
     write: (t: R) => t,
+  }
+}
+
+/* Variant. Pity that typescript doesn't have variadic generics... */
+// @ts-ignore
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+>(
+  a: Tag0, b: Variant0,
+  c: Tag1, d: Variant1,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>)
+>;
+
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+  Tag2 extends string, Variant2 extends Obj<any>,
+>(
+  t0: Tag0, v0: Variant0,
+  t1: Tag1, v1: Variant1,
+  t2: Tag1, v2: Variant2,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
+  ({ type: Tag2 } & TypeEncapsulatedBy<Variant2>)
+>;
+
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+  Tag2 extends string, Variant2 extends Obj<any>,
+  Tag3 extends string, Variant3 extends Obj<any>,
+>(
+  t0: Tag0, v0: Variant0,
+  t1: Tag1, v1: Variant1,
+  t2: Tag1, v2: Variant2,
+  t3: Tag1, v3: Variant3,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
+  ({ type: Tag2 } & TypeEncapsulatedBy<Variant2>) |
+  ({ type: Tag3 } & TypeEncapsulatedBy<Variant3>)
+>;
+
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+  Tag2 extends string, Variant2 extends Obj<any>,
+  Tag3 extends string, Variant3 extends Obj<any>,
+  Tag4 extends string, Variant4 extends Obj<any>,
+>(
+  t0: Tag0, v0: Variant0,
+  t1: Tag1, v1: Variant1,
+  t2: Tag1, v2: Variant2,
+  t3: Tag1, v3: Variant3,
+  t4: Tag1, v4: Variant4,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
+  ({ type: Tag2 } & TypeEncapsulatedBy<Variant2>) |
+  ({ type: Tag3 } & TypeEncapsulatedBy<Variant3>) |
+  ({ type: Tag4 } & TypeEncapsulatedBy<Variant4>)
+>;
+
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+  Tag2 extends string, Variant2 extends Obj<any>,
+  Tag3 extends string, Variant3 extends Obj<any>,
+  Tag4 extends string, Variant4 extends Obj<any>,
+  Tag5 extends string, Variant5 extends Obj<any>,
+>(
+  t0: Tag0, v0: Variant0,
+  t1: Tag1, v1: Variant1,
+  t2: Tag1, v2: Variant2,
+  t3: Tag1, v3: Variant3,
+  t4: Tag1, v4: Variant4,
+  t5: Tag1, v5: Variant5,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
+  ({ type: Tag2 } & TypeEncapsulatedBy<Variant2>) |
+  ({ type: Tag3 } & TypeEncapsulatedBy<Variant3>) |
+  ({ type: Tag4 } & TypeEncapsulatedBy<Variant4>) |
+  ({ type: Tag5 } & TypeEncapsulatedBy<Variant5>)
+>;
+
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+  Tag2 extends string, Variant2 extends Obj<any>,
+  Tag3 extends string, Variant3 extends Obj<any>,
+  Tag4 extends string, Variant4 extends Obj<any>,
+  Tag5 extends string, Variant5 extends Obj<any>,
+  Tag6 extends string, Variant6 extends Obj<any>,
+>(
+  t0: Tag0, v0: Variant0,
+  t1: Tag1, v1: Variant1,
+  t2: Tag1, v2: Variant2,
+  t3: Tag1, v3: Variant3,
+  t4: Tag1, v4: Variant4,
+  t5: Tag1, v5: Variant5,
+  t6: Tag1, v6: Variant6,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
+  ({ type: Tag2 } & TypeEncapsulatedBy<Variant2>) |
+  ({ type: Tag3 } & TypeEncapsulatedBy<Variant3>) |
+  ({ type: Tag4 } & TypeEncapsulatedBy<Variant4>) |
+  ({ type: Tag5 } & TypeEncapsulatedBy<Variant5>) |
+  ({ type: Tag6 } & TypeEncapsulatedBy<Variant6>)
+>;
+
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+  Tag2 extends string, Variant2 extends Obj<any>,
+  Tag3 extends string, Variant3 extends Obj<any>,
+  Tag4 extends string, Variant4 extends Obj<any>,
+  Tag5 extends string, Variant5 extends Obj<any>,
+  Tag6 extends string, Variant6 extends Obj<any>,
+  Tag7 extends string, Variant7 extends Obj<any>,
+>(
+  t0: Tag0, v0: Variant0,
+  t1: Tag1, v1: Variant1,
+  t2: Tag1, v2: Variant2,
+  t3: Tag1, v3: Variant3,
+  t4: Tag1, v4: Variant4,
+  t5: Tag1, v5: Variant5,
+  t6: Tag1, v6: Variant6,
+  t7: Tag1, v7: Variant7,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
+  ({ type: Tag2 } & TypeEncapsulatedBy<Variant2>) |
+  ({ type: Tag3 } & TypeEncapsulatedBy<Variant3>) |
+  ({ type: Tag4 } & TypeEncapsulatedBy<Variant4>) |
+  ({ type: Tag5 } & TypeEncapsulatedBy<Variant5>) |
+  ({ type: Tag6 } & TypeEncapsulatedBy<Variant6>) |
+  ({ type: Tag7 } & TypeEncapsulatedBy<Variant7>)
+>;
+
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+  Tag2 extends string, Variant2 extends Obj<any>,
+  Tag3 extends string, Variant3 extends Obj<any>,
+  Tag4 extends string, Variant4 extends Obj<any>,
+  Tag5 extends string, Variant5 extends Obj<any>,
+  Tag6 extends string, Variant6 extends Obj<any>,
+  Tag7 extends string, Variant7 extends Obj<any>,
+  Tag8 extends string, Variant8 extends Obj<any>,
+>(
+  t0: Tag0, v0: Variant0,
+  t1: Tag1, v1: Variant1,
+  t2: Tag1, v2: Variant2,
+  t3: Tag1, v3: Variant3,
+  t4: Tag1, v4: Variant4,
+  t5: Tag1, v5: Variant5,
+  t6: Tag1, v6: Variant6,
+  t7: Tag1, v7: Variant7,
+  t8: Tag1, v8: Variant8,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
+  ({ type: Tag2 } & TypeEncapsulatedBy<Variant2>) |
+  ({ type: Tag3 } & TypeEncapsulatedBy<Variant3>) |
+  ({ type: Tag4 } & TypeEncapsulatedBy<Variant4>) |
+  ({ type: Tag5 } & TypeEncapsulatedBy<Variant5>) |
+  ({ type: Tag6 } & TypeEncapsulatedBy<Variant6>) |
+  ({ type: Tag7 } & TypeEncapsulatedBy<Variant7>) |
+  ({ type: Tag8 } & TypeEncapsulatedBy<Variant8>)
+>;
+
+export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>,
+  Tag1 extends string, Variant1 extends Obj<any>,
+  Tag2 extends string, Variant2 extends Obj<any>,
+  Tag3 extends string, Variant3 extends Obj<any>,
+  Tag4 extends string, Variant4 extends Obj<any>,
+  Tag5 extends string, Variant5 extends Obj<any>,
+  Tag6 extends string, Variant6 extends Obj<any>,
+  Tag7 extends string, Variant7 extends Obj<any>,
+  Tag8 extends string, Variant8 extends Obj<any>,
+  Tag9 extends string, Variant9 extends Obj<any>,
+>(
+  t0: Tag0, v0: Variant0,
+  t1: Tag1, v1: Variant1,
+  t2: Tag1, v2: Variant2,
+  t3: Tag1, v3: Variant3,
+  t4: Tag1, v4: Variant4,
+  t5: Tag1, v5: Variant5,
+  t6: Tag1, v6: Variant6,
+  t7: Tag1, v7: Variant7,
+  t8: Tag1, v8: Variant8,
+  t9: Tag1, v9: Variant9,
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
+  ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
+  ({ type: Tag2 } & TypeEncapsulatedBy<Variant2>) |
+  ({ type: Tag3 } & TypeEncapsulatedBy<Variant3>) |
+  ({ type: Tag4 } & TypeEncapsulatedBy<Variant4>) |
+  ({ type: Tag5 } & TypeEncapsulatedBy<Variant5>) |
+  ({ type: Tag6 } & TypeEncapsulatedBy<Variant6>) |
+  ({ type: Tag7 } & TypeEncapsulatedBy<Variant7>) |
+  ({ type: Tag8 } & TypeEncapsulatedBy<Variant8>) |
+  ({ type: Tag9 } & TypeEncapsulatedBy<Variant9>)
+>;
+
+export function variant(...args) {
+  type R = any; // can't infer return type here. too complex
+  const variantTypes = args.filter((v, i) => i%2==0);
+  const variantSerializers = args.filter((v, i) => i%2!=0);
+
+  // @ts-ignore
+  return {
+    read: (o: Jsonifyable): R => {
+      const i = variantTypes.indexOf(o.type);
+      if (i == -1) {
+        return parseError(`type in ${JSON.stringify(variantTypes)}`, o);
+      } else {
+        return {
+          ...variantSerializers[i].read(o),
+          type: o.type
+        };
+      }
+    },
+    write: (t: R) => {
+      const i = variantTypes.indexOf(t.type);
+      return {
+        ...variantSerializers[i].write(t),
+        type: t.type
+      };
+    }
   }
 }
