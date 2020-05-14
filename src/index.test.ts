@@ -1,7 +1,18 @@
 import * as Safe from './index';
 
 describe('Type-safe composable serializers', () => {
-  test('object', () => {
+  test('partial_obj', () => {
+    const s = Safe.partial_obj({
+      x: Safe.str,
+      y: Safe.array(Safe.int)
+    });
+    const o = { y: [1,2,3] };
+
+    expect(s.read(s.write(o))).toEqual(o);
+    expect(() => s.read([])).toThrowError(Safe.ParseError);
+  });
+
+  test('obj', () => {
     const s = Safe.obj({
       x: Safe.str,
       y: Safe.array(Safe.int)

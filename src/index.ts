@@ -165,6 +165,36 @@ export function obj<T extends Record<string, Type<any>>>(def: T)
   }
 }
 
+/**
+ * Like obj, but all properties are optional
+ */
+export function partial_obj<T extends Record<string, Type<any>>>(def: T)
+: Obj<{ [key in keyof T]?: TypeEncapsulatedBy<T[key]> }>
+{
+  type R = { [key in keyof T]?: TypeEncapsulatedBy<T[key]> };
+  return {
+    container: 'obj',
+    read: (o: Jsonifyable): R => {
+      const out: any = {};
+      for (let key of Object.keys(def)) {
+        if (o instanceof Object && !(o instanceof Array)) {
+          out[key] = optional(def[key]).read(o[key]);
+        } else {
+          parseError('an object', o);
+        }
+      }
+      return out;
+    },
+    write: (r: R): Jsonifyable => {
+      const out: any = {};
+      for (let key of Object.keys(def)) {
+        out[key] = optional(def[key]).write(r[key]);
+      }
+      return out;
+    }
+  }
+}
+
 export function tuple<T extends Array<SafeSerializer<any>>>(...def: T)
   : Tuple<{ [key in keyof T]: T[key] extends SafeSerializer<any> ? TypeEncapsulatedBy<T[key]> : never }>
 {
