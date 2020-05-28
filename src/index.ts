@@ -232,6 +232,14 @@ export function oneOf<T>(def: T)
 /* Variant. Pity that typescript doesn't have variadic generics... */
 // @ts-ignore
 export function variant<
+  Tag0 extends string, Variant0 extends Obj<any>
+>(
+  a: Tag0, b: Variant0
+): SumType<
+  ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>)
+>;
+
+export function variant<
   Tag0 extends string, Variant0 extends Obj<any>,
   Tag1 extends string, Variant1 extends Obj<any>,
 >(
