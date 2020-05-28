@@ -99,6 +99,7 @@ describe('Type-safe composable serializers', () => {
     const s = Safe.oneOf({a:'', b:''});
     expect(s.read('a')).toEqual('a');
     expect(() => s.read('c')).toThrowError(Safe.ParseError);
+    expect(s.write('a')).toEqual('a');
   });
 
   test('variant', () => {
