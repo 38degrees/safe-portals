@@ -2,6 +2,15 @@
 
 ### Type-safe, validated, composable serialization/unserialization
 
+#### Version 2.0 changes
+
+ParseError has been renamed to ValidationError
+
+Type<T>.write methods now throw ValidationError if you attempt to
+write invalid types (which the type system would prevent for many types,
+but is possible for others (uuid), and possible where 'any' types are
+being used.
+
 #### Basics
 
 Safe-portals can be used wherever data traverses an un-typed boundary
@@ -21,14 +30,14 @@ boolean, null, arrays of these types, and objects indexed by strings and
 containing only these types). For example:
 
 ```TSX
-Safe.date
+Safe.dateIso
 ```
 
 Is a safe-portal for a date object. The unserialization operation is called
 'read':
 
 ```TSX
-Safe.date.read("2020-03-04T12:27:41.360Z")
+Safe.dateIso.read("2020-03-04T12:27:41.360Z")
 > Date Wed Mar 04 2020 12:27:41 GMT+0000 (Greenwich Mean Time)
 ```
 
@@ -36,7 +45,7 @@ The serialization operation is the other side of the
 serialization/unserialization symmetry:
 
 ```TSX
-Safe.date.write(new Date())
+Safe.dateIso.write(new Date())
 > "2020-03-04T12:27:41.360Z"
 ```
 
@@ -63,8 +72,8 @@ You can build type-portals for types like tuples, arrays and objects:
 ```TSX
 const personPortal = Safe.obj({
 	name: Safe.str,
-	date_of_birth: Safe.date,
-	date_of_death: Safe.optional(Safe.date),
+	date_of_birth: Safe.dateIso,
+	date_of_death: Safe.optional(Safe.dateIso),
 	favourite_foods: Safe.array(Safe.str)
 });
 
@@ -126,8 +135,8 @@ export const savePerson = makeEndpoint(
   Safe.obj({
 	guid: Safe.str,
 	name: Safe.str,
-	date_of_birth: Safe.date,
-	date_of_death: Safe.optional(Safe.date),
+	date_of_birth: Safe.dateIso,
+	date_of_death: Safe.optional(Safe.dateIso),
 	favourite_foods: Safe.array(Safe.str)
   }),
   // response (either success (nothing) or an error string)

@@ -5,17 +5,17 @@
  * (eg from DB, tasks sent to resque, HTTP calls, routing information in
  * URLs), in order to maintain static analysis across the un-typed boundary.
  */
-export class ParseError extends Error {
+export class ValidationError extends Error {
   constructor(wanted: string, got: any) {
     super(`Parse error: expected ${wanted} but found ${JSON.stringify(got)}`);
     // needed because JS is silly
     // @ts-ignore
-    Object.setPrototypeOf(this, ParseError.prototype);
+    Object.setPrototypeOf(this, ValidationError.prototype);
   }
 }
 // why this wrapper with 'never' type? so we can put error handling into expressions
-const parseError = (wanted: string, got: any): never => {
-  throw new ParseError(wanted, got)
+const validationError = (wanted: string, got: any): never => {
+  throw new ValidationError(wanted, got)
 }
 
 type Jsonifyable = any;
@@ -37,43 +37,56 @@ export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | Date
 
 /**
  * useful for getting the TS type that a safe serializer operates on.
- * ie. TypeEncapsulatedBy<Type<T>> = T
+ * ie. TypeIn<Type<T>> = T
  */
 export type TypeEncapsulatedBy<T extends SafeSerializer<any>> = ReturnType<T['read']>;
+export type TypeIn<T extends SafeSerializer<any>> = TypeEncapsulatedBy<T>;
 
 export const dateUnixSecs: Type<Date> = {
   container: 'none',
   read: (o: Jsonifyable): Date => {
     const d = new Date(parseFloat(o) * 1000.0);
-    return isNaN(d.getTime()) ? parseError('dateUnixSecs', o) : d;
+    return isNaN(d.getTime()) ? validationError('dateUnixSecs', o) : d;
   },
-  write: t => t.getTime() / 1000.0
+  write: t =>
+    t instanceof Date
+    ? t.getTime() / 1000.0
+    : validationError('Date', t)
 };
 
 export const dateUnixMillis: Type<Date> = {
   container: 'none',
   read: (o: Jsonifyable): Date => {
     const d = new Date(parseFloat(o));
-    return isNaN(d.getTime()) ? parseError('dateUnixMillis', o) : d;
+    return isNaN(d.getTime()) ? validationError('dateUnixMillis', o) : d;
   },
-  write: t => t.getTime()
+  write: t =>
+    t instanceof Date
+    ? t.getTime()
+    : validationError('Date', t)
 };
 
 export const dateIso: Type<Date> = {
   container: 'none',
   read: (o: Jsonifyable): Date => {
     const d = new Date(o ? o.toString() : '');
-    return isNaN(d.getTime()) ? parseError('dateIso', o) : d;
+    return isNaN(d.getTime()) ? validationError('dateIso', o) : d;
   },
-  write: t => t.toISOString()
+  write: t =>
+    t instanceof Date
+    ? t.toISOString()
+    : validationError('Date', t)
 };
 
 export const str: Type<string> = {
   container: 'none',
   read: (o: Jsonifyable): string => {
-    return typeof o == 'string' ? o : parseError('string', o);
+    return typeof o == 'string' ? o : validationError('string', o);
   },
-  write: t => t
+  write: t =>
+    typeof(t) == 'string'
+    ? t
+    : validationError('string', t)
 }
 
 export const nothing: Type<void> = {
@@ -84,32 +97,57 @@ export const nothing: Type<void> = {
 
 export const bool: Type<boolean> = {
   container: 'none',
-  read: (o: any): boolean => typeof o == 'boolean' ? o : parseError('boolean', o),
-  write: o => o
+  read: (o: any): boolean => typeof o == 'boolean' ? o : validationError('boolean', o),
+  write: o => 
+    typeof(o) == 'boolean'
+    ? o
+    : validationError('boolean', o)
 }
 
 export const int: Type<number> = {
   container: 'none',
   read: (o: any): number => {
     const i = parseInt(o);
-    return isNaN(i) ? parseError('integer', o) : i;
+    return isNaN(i) ? validationError('integer', o) : i;
   },
-  write: o => o
+  write: o => 
+    typeof(o) == 'number'
+    ? o
+    : validationError('number', o)
 }
 
 export const float: Type<number> = {
   container: 'none',
   read: (o: any): number => {
     const i = parseFloat(o);
-    return isNaN(i) ? parseError('float', o) : i;
+    return isNaN(i) ? validationError('float', o) : i;
   },
-  write: o => o
+  write: o => 
+    typeof(o) == 'number'
+    ? o
+    : validationError('number', o)
 }
 
 export const raw: Type<any> = {
   container: 'none',
   read: o => o,
   write: o => o
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export const uuid: Type<string> = {
+  container: 'none',
+  read: (o: Jsonifyable): string => {
+    return typeof o == 'string' && o.match(UUID_REGEX)
+      ? o
+      : validationError('uuid', o);
+  },
+  write: t => {
+    return typeof t == 'string' && t.match(UUID_REGEX)
+      ? t
+      : validationError('uuid', t);
+  }
 }
 
 export function optional<T>(s: Type<T>): Type<T | undefined> {
@@ -132,9 +170,12 @@ export function array<T>(s: Type<T>): List<T[]> {
   return {
     container: 'list',
     read: (o: any): T[] => {
-      return o instanceof Array ? o.map(s.read) : parseError('array', o);
+      return o instanceof Array ? o.map(s.read) : validationError('array', o);
     },
-    write: (o: T[]): Jsonifyable => o.map(s.write)
+    write: (o: T[]): Jsonifyable =>
+      o instanceof Array
+      ? o.map(s.write)
+      : validationError('array', o)
   }
 }
 
@@ -145,17 +186,19 @@ export function obj<T extends Record<string, Type<any>>>(def: T)
   return {
     container: 'obj',
     read: (o: Jsonifyable): R => {
+      if (!(o instanceof Object) || (o instanceof Array)) {
+        return validationError('an object', o);
+      }
+
       const out: any = {};
       for (let key of Object.keys(def)) {
-        if (o instanceof Object && !(o instanceof Array)) {
-          out[key] = def[key].read(o[key]);
-        } else {
-          parseError('an object', o);
-        }
+        out[key] = def[key].read(o[key]);
       }
       return out;
     },
     write: (r: R): Jsonifyable => {
+      if (!(r instanceof Object)) return validationError('object', r);
+
       const out: any = {};
       for (let key of Object.keys(def)) {
         out[key] = def[key].write(r[key]);
@@ -175,17 +218,21 @@ export function partial_obj<T extends Record<string, Type<any>>>(def: T)
   return {
     container: 'obj',
     read: (o: Jsonifyable): R => {
+      if (!(o instanceof Object) || (o instanceof Array)) {
+        return validationError('an object', o);
+      }
+
       const out: any = {};
       for (let key of Object.keys(def)) {
-        if (o instanceof Object && !(o instanceof Array)) {
-          out[key] = optional(def[key]).read(o[key]);
-        } else {
-          parseError('an object', o);
-        }
+        out[key] = optional(def[key]).read(o[key]);
       }
       return out;
     },
     write: (r: R): Jsonifyable => {
+      if (!(r instanceof Object) || (r instanceof Array)) {
+        return validationError('object', r);
+      }
+
       const out: any = {};
       for (let key of Object.keys(def)) {
         out[key] = optional(def[key]).write(r[key]);
@@ -205,10 +252,13 @@ export function tuple<T extends Array<SafeSerializer<any>>>(...def: T)
       if (o instanceof Array) {
         return def.map((d, i) => d.read(o[i])) as any;
       } else {
-        return parseError('an array', o);
+        return validationError('an array', o);
       }
     },
-    write: (r: R): Jsonifyable => def.map((d, i) => d.write(r[i]))
+    write: (r: R): Jsonifyable =>
+      r instanceof Array
+      ? def.map((d, i) => d.write(r[i]))
+      : validationError('array', r)
   }
 }
 
@@ -222,10 +272,13 @@ export function oneOf<T>(def: T)
       if (Object.keys(def).indexOf(o) != -1) {
         return o;
       } else {
-        return parseError(`one of ${Object.keys(def)}`, o);
+        return validationError(`one of ${Object.keys(def)}`, o);
       }
     },
-    write: (t: R) => t,
+    write: (t: R) => 
+      Object.keys(def).indexOf(t as string) != -1
+      ? t
+      : validationError(`one of ${Object.keys(def)}`, t)
   }
 }
 
@@ -446,6 +499,7 @@ export function variant<
   ({ type: Tag9 } & TypeEncapsulatedBy<Variant9>)
 >;
 
+// @ts-ignore
 export function variant(...args) {
   type R = any; // can't infer return type here. too complex
   const variantTypes = args.filter((v, i) => i%2==0);
@@ -456,7 +510,7 @@ export function variant(...args) {
     read: (o: Jsonifyable): R => {
       const i = variantTypes.indexOf(o.type);
       if (i == -1) {
-        return parseError(`type in ${JSON.stringify(variantTypes)}`, o);
+        return validationError(`type in ${JSON.stringify(variantTypes)}`, o);
       } else {
         return {
           ...variantSerializers[i].read(o),
@@ -466,10 +520,14 @@ export function variant(...args) {
     },
     write: (t: R) => {
       const i = variantTypes.indexOf(t.type);
-      return {
-        ...variantSerializers[i].write(t),
-        type: t.type
-      };
+      if (i == -1) {
+        return validationError(`type in ${JSON.stringify(variantTypes)}`, t);
+      } else {
+        return {
+          ...variantSerializers[i].write(t),
+          type: t.type
+        };
+      }
     }
   }
 }
