@@ -7,7 +7,7 @@
  */
 export class ValidationError extends Error {
   constructor(wanted: string, got: any) {
-    super(`Parse error: expected ${wanted} but found ${JSON.stringify(got)}`);
+    super(`ValidationError: expected ${wanted} but found ${JSON.stringify(got)}`);
     // needed because JS is silly
     // @ts-ignore
     Object.setPrototypeOf(this, ValidationError.prototype);
@@ -310,7 +310,7 @@ export function variant<
 >(
   t0: Tag0, v0: Variant0,
   t1: Tag1, v1: Variant1,
-  t2: Tag1, v2: Variant2,
+  t2: Tag2, v2: Variant2,
 ): SumType<
   ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
   ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
@@ -325,8 +325,8 @@ export function variant<
 >(
   t0: Tag0, v0: Variant0,
   t1: Tag1, v1: Variant1,
-  t2: Tag1, v2: Variant2,
-  t3: Tag1, v3: Variant3,
+  t2: Tag2, v2: Variant2,
+  t3: Tag3, v3: Variant3,
 ): SumType<
   ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
   ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
@@ -343,9 +343,9 @@ export function variant<
 >(
   t0: Tag0, v0: Variant0,
   t1: Tag1, v1: Variant1,
-  t2: Tag1, v2: Variant2,
-  t3: Tag1, v3: Variant3,
-  t4: Tag1, v4: Variant4,
+  t2: Tag2, v2: Variant2,
+  t3: Tag3, v3: Variant3,
+  t4: Tag4, v4: Variant4,
 ): SumType<
   ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
   ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
@@ -364,10 +364,10 @@ export function variant<
 >(
   t0: Tag0, v0: Variant0,
   t1: Tag1, v1: Variant1,
-  t2: Tag1, v2: Variant2,
-  t3: Tag1, v3: Variant3,
-  t4: Tag1, v4: Variant4,
-  t5: Tag1, v5: Variant5,
+  t2: Tag2, v2: Variant2,
+  t3: Tag3, v3: Variant3,
+  t4: Tag4, v4: Variant4,
+  t5: Tag5, v5: Variant5,
 ): SumType<
   ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
   ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
@@ -388,11 +388,11 @@ export function variant<
 >(
   t0: Tag0, v0: Variant0,
   t1: Tag1, v1: Variant1,
-  t2: Tag1, v2: Variant2,
-  t3: Tag1, v3: Variant3,
-  t4: Tag1, v4: Variant4,
-  t5: Tag1, v5: Variant5,
-  t6: Tag1, v6: Variant6,
+  t2: Tag2, v2: Variant2,
+  t3: Tag3, v3: Variant3,
+  t4: Tag4, v4: Variant4,
+  t5: Tag5, v5: Variant5,
+  t6: Tag6, v6: Variant6,
 ): SumType<
   ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
   ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
@@ -415,12 +415,12 @@ export function variant<
 >(
   t0: Tag0, v0: Variant0,
   t1: Tag1, v1: Variant1,
-  t2: Tag1, v2: Variant2,
-  t3: Tag1, v3: Variant3,
-  t4: Tag1, v4: Variant4,
-  t5: Tag1, v5: Variant5,
-  t6: Tag1, v6: Variant6,
-  t7: Tag1, v7: Variant7,
+  t2: Tag2, v2: Variant2,
+  t3: Tag3, v3: Variant3,
+  t4: Tag4, v4: Variant4,
+  t5: Tag5, v5: Variant5,
+  t6: Tag6, v6: Variant6,
+  t7: Tag7, v7: Variant7,
 ): SumType<
   ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
   ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
@@ -445,13 +445,13 @@ export function variant<
 >(
   t0: Tag0, v0: Variant0,
   t1: Tag1, v1: Variant1,
-  t2: Tag1, v2: Variant2,
-  t3: Tag1, v3: Variant3,
-  t4: Tag1, v4: Variant4,
-  t5: Tag1, v5: Variant5,
-  t6: Tag1, v6: Variant6,
-  t7: Tag1, v7: Variant7,
-  t8: Tag1, v8: Variant8,
+  t2: Tag2, v2: Variant2,
+  t3: Tag3, v3: Variant3,
+  t4: Tag4, v4: Variant4,
+  t5: Tag5, v5: Variant5,
+  t6: Tag6, v6: Variant6,
+  t7: Tag7, v7: Variant7,
+  t8: Tag8, v8: Variant8,
 ): SumType<
   ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
   ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
@@ -478,14 +478,14 @@ export function variant<
 >(
   t0: Tag0, v0: Variant0,
   t1: Tag1, v1: Variant1,
-  t2: Tag1, v2: Variant2,
-  t3: Tag1, v3: Variant3,
-  t4: Tag1, v4: Variant4,
-  t5: Tag1, v5: Variant5,
-  t6: Tag1, v6: Variant6,
-  t7: Tag1, v7: Variant7,
-  t8: Tag1, v8: Variant8,
-  t9: Tag1, v9: Variant9,
+  t2: Tag2, v2: Variant2,
+  t3: Tag3, v3: Variant3,
+  t4: Tag4, v4: Variant4,
+  t5: Tag5, v5: Variant5,
+  t6: Tag6, v6: Variant6,
+  t7: Tag7, v7: Variant7,
+  t8: Tag8, v8: Variant8,
+  t9: Tag9, v9: Variant9,
 ): SumType<
   ({ type: Tag0 } & TypeEncapsulatedBy<Variant0>) |
   ({ type: Tag1 } & TypeEncapsulatedBy<Variant1>) |
