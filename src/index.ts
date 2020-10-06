@@ -14,7 +14,7 @@ export class ValidationError extends Error {
   }
 }
 // why this wrapper with 'never' type? so we can put error handling into expressions
-const validationError = (wanted: string, got: any): never => {
+export const validationError = (wanted: string, got: any): never => {
   throw new ValidationError(wanted, got)
 }
 
