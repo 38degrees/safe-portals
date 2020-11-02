@@ -28,7 +28,7 @@ interface SafeSerializer<T> { read: Reader<T>; write: Writer<T>; }
 export interface Tuple<T> extends SafeSerializer<T> { container: 'tuple' }
 export interface Value<T> extends SafeSerializer<T> { container: 'none' }
 export interface List<T> extends SafeSerializer<T> { container: 'list' }
-export interface Obj<T> extends SafeSerializer<T> { container: 'obj' }
+export interface Obj<T> extends SafeSerializer<T> { container: 'obj', read_with_defaults: (defaults: T, o: Jsonifyable) => T }
 export interface SumType<T> extends SafeSerializer<T> { container: 'sumtype' }
 export interface DateIso<T> extends SafeSerializer<T> { container: 'dateIso' }
 export interface DateUnixSecs<T> extends SafeSerializer<T> { container: 'dateUnixSecs' }
@@ -183,28 +183,36 @@ export function obj<T extends Record<string, Type<any>>>(def: T)
 : Obj<{ [key in keyof T]: TypeEncapsulatedBy<T[key]> }>
 {
   type R = { [key in keyof T]: TypeEncapsulatedBy<T[key]> };
+
+  const read = (o: Jsonifyable): R => {
+    if (!(o instanceof Object) || (o instanceof Array)) {
+      return validationError('an object', o);
+    }
+
+    const out: any = {};
+    for (let key of Object.keys(def)) {
+      out[key] = def[key].read(o[key]);
+    }
+    return out;
+  };
+
+  const write = (r: R): Jsonifyable => {
+    if (!(r instanceof Object)) return validationError('object', r);
+
+    const out: any = {};
+    for (let key of Object.keys(def)) {
+      out[key] = def[key].write(r[key]);
+    }
+    return out;
+  };
+
   return {
     container: 'obj',
-    read: (o: Jsonifyable): R => {
-      if (!(o instanceof Object) || (o instanceof Array)) {
-        return validationError('an object', o);
-      }
-
-      const out: any = {};
-      for (let key of Object.keys(def)) {
-        out[key] = def[key].read(o[key]);
-      }
-      return out;
+    read,
+    write,
+    read_with_defaults: (defaults: R, o: Jsonifyable) => {
+      return read({ ...write(defaults), ...o });
     },
-    write: (r: R): Jsonifyable => {
-      if (!(r instanceof Object)) return validationError('object', r);
-
-      const out: any = {};
-      for (let key of Object.keys(def)) {
-        out[key] = def[key].write(r[key]);
-      }
-      return out;
-    }
   }
 }
 
@@ -215,30 +223,38 @@ export function partial_obj<T extends Record<string, Type<any>>>(def: T)
 : Obj<{ [key in keyof T]?: TypeEncapsulatedBy<T[key]> }>
 {
   type R = { [key in keyof T]?: TypeEncapsulatedBy<T[key]> };
+
+  const read = (o: Jsonifyable): R => {
+    if (!(o instanceof Object) || (o instanceof Array)) {
+      return validationError('an object', o);
+    }
+
+    const out: any = {};
+    for (let key of Object.keys(def)) {
+      out[key] = optional(def[key]).read(o[key]);
+    }
+    return out;
+  };
+
+  const write = (r: R): Jsonifyable => {
+    if (!(r instanceof Object) || (r instanceof Array)) {
+      return validationError('object', r);
+    }
+
+    const out: any = {};
+    for (let key of Object.keys(def)) {
+      out[key] = optional(def[key]).write(r[key]);
+    }
+    return out;
+  };
+
   return {
     container: 'obj',
-    read: (o: Jsonifyable): R => {
-      if (!(o instanceof Object) || (o instanceof Array)) {
-        return validationError('an object', o);
-      }
-
-      const out: any = {};
-      for (let key of Object.keys(def)) {
-        out[key] = optional(def[key]).read(o[key]);
-      }
-      return out;
+    read,
+    write,
+    read_with_defaults: (defaults: R, o: Jsonifyable) => {
+      return read({ ...write(defaults), ...o });
     },
-    write: (r: R): Jsonifyable => {
-      if (!(r instanceof Object) || (r instanceof Array)) {
-        return validationError('object', r);
-      }
-
-      const out: any = {};
-      for (let key of Object.keys(def)) {
-        out[key] = optional(def[key]).write(r[key]);
-      }
-      return out;
-    }
   }
 }
 

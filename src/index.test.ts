@@ -30,6 +30,17 @@ describe('Type-safe composable serializers', () => {
     expect(() => s.read([])).toThrowError(Safe.ValidationError);
   });
 
+  test('obj.read_with_defaults', () => {
+    const s = Safe.obj({
+      x: Safe.str,
+      y: Safe.array(Safe.int)
+    });
+    const o = { x: 'hi' };
+
+    expect(() => s.read(o)).toThrowError(Safe.ValidationError);
+    expect(s.read_with_defaults({x: 'oi', y:[1,2,3]}, o)).toEqual({ x: 'hi', y: [1,2,3] });
+  });
+
   test('nothing', () => {
     expect(Safe.nothing.read(Safe.nothing.write(undefined))).toEqual(undefined);
   });
