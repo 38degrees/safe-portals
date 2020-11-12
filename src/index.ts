@@ -23,24 +23,24 @@ type Jsonifyable = any;
 // type Jsonifyable = string | number | boolean | null | Jsonifyable[] | { [key: string]: Jsonifyable };
 type Reader<T> = (o: Jsonifyable) => T;
 type Writer<T> = (t: T) => Jsonifyable;
-interface SafeSerializer<T> { read: Reader<T>; write: Writer<T>; }
+export interface Serializer<T> { read: Reader<T>; write: Writer<T>; }
 
-export interface Tuple<T> extends SafeSerializer<T> { container: 'tuple' }
-export interface Value<T> extends SafeSerializer<T> { container: 'none' }
-export interface List<T> extends SafeSerializer<T> { container: 'list' }
-export interface Obj<T> extends SafeSerializer<T> { container: 'obj', read_with_defaults: (defaults: T, o: Jsonifyable) => T }
-export interface SumType<T> extends SafeSerializer<T> { container: 'sumtype' }
-export interface DateIso<T> extends SafeSerializer<T> { container: 'dateIso' }
-export interface DateUnixSecs<T> extends SafeSerializer<T> { container: 'dateUnixSecs' }
-export interface DateUnixMillis<T> extends SafeSerializer<T> { container: 'dateUnixMillis' }
+export interface Tuple<T> extends Serializer<T> { container: 'tuple' }
+export interface Value<T> extends Serializer<T> { container: 'none' }
+export interface List<T> extends Serializer<T> { container: 'list' }
+export interface Obj<T> extends Serializer<T> { container: 'obj', read_with_defaults: (defaults: T, o: Jsonifyable) => T }
+export interface SumType<T> extends Serializer<T> { container: 'sumtype' }
+export interface DateIso<T> extends Serializer<T> { container: 'dateIso' }
+export interface DateUnixSecs<T> extends Serializer<T> { container: 'dateUnixSecs' }
+export interface DateUnixMillis<T> extends Serializer<T> { container: 'dateUnixMillis' }
 export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | DateUnixSecs<T> | DateUnixMillis<T> | SumType<T>;
 
 /**
  * useful for getting the TS type that a safe serializer operates on.
  * ie. TypeIn<Type<T>> = T
  */
-export type TypeEncapsulatedBy<T extends SafeSerializer<any>> = ReturnType<T['read']>;
-export type TypeIn<T extends SafeSerializer<any>> = TypeEncapsulatedBy<T>;
+export type TypeEncapsulatedBy<T extends Serializer<any>> = ReturnType<T['read']>;
+export type TypeIn<T extends Serializer<any>> = TypeEncapsulatedBy<T>;
 
 export const dateUnixSecs: Type<Date> = {
   container: 'none',
@@ -258,10 +258,10 @@ export function partial_obj<T extends Record<string, Type<any>>>(def: T)
   }
 }
 
-export function tuple<T extends Array<SafeSerializer<any>>>(...def: T)
-  : Tuple<{ [key in keyof T]: T[key] extends SafeSerializer<any> ? TypeEncapsulatedBy<T[key]> : never }>
+export function tuple<T extends Array<Serializer<any>>>(...def: T)
+  : Tuple<{ [key in keyof T]: T[key] extends Serializer<any> ? TypeEncapsulatedBy<T[key]> : never }>
 {
-  type R = { [key in keyof T]: T[key] extends SafeSerializer<any> ? TypeEncapsulatedBy<T[key]> : never };
+  type R = { [key in keyof T]: T[key] extends Serializer<any> ? TypeEncapsulatedBy<T[key]> : never };
   return {
     container: 'tuple',
     read: (o: Jsonifyable): R => {
