@@ -25,6 +25,7 @@ type Reader<T> = (o: Jsonifyable) => T;
 type Writer<T> = (t: T) => Jsonifyable;
 export interface Serializer<T> { read: Reader<T>; write: Writer<T>; description: () => string }
 
+export interface Versioned<T> extends Serializer<T> { container: 'versioned' }
 export interface Tuple<T> extends Serializer<T> { container: 'tuple' }
 export interface Value<T> extends Serializer<T> { container: 'none' }
 export interface List<T> extends Serializer<T> { container: 'list' }
@@ -33,7 +34,7 @@ export interface SumType<T> extends Serializer<T> { container: 'sumtype' }
 export interface DateIso<T> extends Serializer<T> { container: 'dateIso' }
 export interface DateUnixSecs<T> extends Serializer<T> { container: 'dateUnixSecs' }
 export interface DateUnixMillis<T> extends Serializer<T> { container: 'dateUnixMillis' }
-export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | DateUnixSecs<T> | DateUnixMillis<T> | SumType<T>;
+export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | DateUnixSecs<T> | DateUnixMillis<T> | SumType<T> | Versioned<T>;
 
 /**
  * useful for getting the TS type that a safe serializer operates on.
@@ -42,11 +43,40 @@ export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | Date
 export type TypeEncapsulatedBy<T extends Serializer<any>> = ReturnType<T['read']>;
 export type TypeIn<T extends Serializer<any>> = TypeEncapsulatedBy<T>;
 
+type VersionMigrator = (o: Jsonifyable) => Jsonifyable;
+
+/**
+ * Versioned serializable type, with data migrations.
+ *
+ * Serialized format is: [version: int, data: T]
+ *
+ * Version migrations operate on raw, unserialized data (see type of VersionMigrator)
+ */
+export function versioned<T>(args: { schema: Type<T>; migrations: VersionMigrator[] }): Versioned<T> {
+  const inner = tuple(int, raw);
+  return {
+    container: 'versioned',
+    description: () => "[version, "+args.schema.description() + (args.migrations.length > 0 ? " or previous version]" : ']'),
+    read: (_o: Jsonifyable): T => {
+      const o = inner.read(_o);
+      let ver = o[0];
+      let data = o[1];
+      // apply data migrations
+      while (ver < args.migrations.length) {
+        data = args.migrations[ver](data);
+        ver++;
+      }
+      return args.schema.read(data);
+    },
+    write: (t: T): Jsonifyable => inner.write([args.migrations.length /* version */, args.schema.write(t)])
+  }
+}
+
 export const dateUnixSecs: Type<Date> = {
   container: 'none',
   description: () => 'Date (seconds since epoch)',
   read: (o: Jsonifyable): Date => {
-    const d = new Date(parseFloat(o) * 1000.0);
+    const d = new Date(typeof o == 'number' ? o * 1000.0 : validationError("DateUnixSecs", o));
     return isNaN(d.getTime()) ? validationError('dateUnixSecs', o) : d;
   },
   write: t =>
@@ -59,7 +89,7 @@ export const dateUnixMillis: Type<Date> = {
   container: 'none',
   description: () => 'Date (milliseconds since epoch)',
   read: (o: Jsonifyable): Date => {
-    const d = new Date(parseFloat(o));
+    const d = new Date(typeof o == 'number' ? o : validationError("DateUnixMillis", o));
     return isNaN(d.getTime()) ? validationError('dateUnixMillis', o) : d;
   },
   write: t =>
@@ -72,7 +102,7 @@ export const dateIso: Type<Date> = {
   container: 'none',
   description: () => 'Date (ISO)',
   read: (o: Jsonifyable): Date => {
-    const d = new Date(o ? o.toString() : '');
+    const d = new Date(typeof o == 'string' ? o : validationError('IsoDateString', o));
     return isNaN(d.getTime()) ? validationError('dateIso', o) : d;
   },
   write: t =>

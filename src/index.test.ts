@@ -1,6 +1,55 @@
 import * as Safe from './index';
 
 describe('Type-safe composable serializers', () => {
+  test('versioned', () => {
+    const v1 = Safe.versioned({
+      schema: Safe.obj({ x: Safe.dateIso }),
+      migrations: []
+    });
+
+    expect(v1.description()).toEqual('[version, {"x": Date (ISO)}]');
+
+    const v1_serialized = v1.write({ x: new Date(2020, 0, 1) });
+    expect(v1_serialized).toEqual([ 0, { x: "2020-01-01T00:00:00.000Z" } ]);
+
+    expect(v1.read(v1_serialized)).toEqual({ x: new Date(2020, 0, 1) });
+
+    // now make new schema version with date stored as dateUnixSecs
+    const v2_missing_migration = Safe.versioned({
+      schema: Safe.obj({ x: Safe.dateUnixSecs }),
+      migrations: []
+    });
+
+    // expected date to be a number now, but is ISO string
+    expect(() => v2_missing_migration.read(v1_serialized)).toThrowError(Safe.ValidationError);
+
+    // give migration
+    const v2 = Safe.versioned({
+      schema: Safe.obj({ x: Safe.dateUnixSecs }),
+      migrations: [
+        o => ({ x: Safe.dateUnixSecs.write(Safe.dateIso.read(o.x)) })
+      ]
+    });
+    expect(v2.read(v1_serialized)).toEqual({ x: new Date(2020, 0, 1) });
+    expect(v2.description()).toEqual('[version, {"x": Date (seconds since epoch)} or previous version]');
+
+    const v2_serialized = v2.write(v2.read(v1_serialized));
+    expect(v2_serialized).toEqual([ 1, { x: new Date(2020,0,1).getTime() / 1000.0 } ]);
+
+    // another version, with an extra migration. we've renamed an attribute
+    const v3 = Safe.versioned({
+      schema: Safe.obj({ myDate: Safe.dateUnixSecs }),
+      migrations: [
+        o => ({ x: Safe.dateUnixSecs.write(Safe.dateIso.read(o.x)) }),
+        o => ({ myDate: o.x })
+      ]
+    });
+
+    expect(v3.read(v1_serialized)).toEqual({ myDate: new Date(2020, 0, 1)});
+    expect(v3.read(v2_serialized)).toEqual({ myDate: new Date(2020, 0, 1)});
+    expect(v3.write({ myDate: new Date(2020, 0, 1) })).toEqual([2, { myDate: new Date(2020, 0, 1).getTime() / 1000.0 } ]);
+  });
+
   test('description', () => {
     expect(Safe.str.description()).toEqual("string");
     expect(Safe.optional(Safe.str).description()).toEqual("null | string");
