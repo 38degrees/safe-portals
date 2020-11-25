@@ -23,12 +23,12 @@ type Jsonifyable = any;
 // type Jsonifyable = string | number | boolean | null | Jsonifyable[] | { [key: string]: Jsonifyable };
 type Reader<T> = (o: Jsonifyable) => T;
 type Writer<T> = (t: T) => Jsonifyable;
-export interface Serializer<T> { read: Reader<T>; write: Writer<T>; }
+export interface Serializer<T> { read: Reader<T>; write: Writer<T>; description: () => string }
 
 export interface Tuple<T> extends Serializer<T> { container: 'tuple' }
 export interface Value<T> extends Serializer<T> { container: 'none' }
 export interface List<T> extends Serializer<T> { container: 'list' }
-export interface Obj<T> extends Serializer<T> { container: 'obj', read_with_defaults: (defaults: T, o: Jsonifyable) => T }
+export interface Obj<T> extends Serializer<T> { container: 'obj' }
 export interface SumType<T> extends Serializer<T> { container: 'sumtype' }
 export interface DateIso<T> extends Serializer<T> { container: 'dateIso' }
 export interface DateUnixSecs<T> extends Serializer<T> { container: 'dateUnixSecs' }
@@ -44,6 +44,7 @@ export type TypeIn<T extends Serializer<any>> = TypeEncapsulatedBy<T>;
 
 export const dateUnixSecs: Type<Date> = {
   container: 'none',
+  description: () => 'Date (seconds since epoch)',
   read: (o: Jsonifyable): Date => {
     const d = new Date(parseFloat(o) * 1000.0);
     return isNaN(d.getTime()) ? validationError('dateUnixSecs', o) : d;
@@ -56,6 +57,7 @@ export const dateUnixSecs: Type<Date> = {
 
 export const dateUnixMillis: Type<Date> = {
   container: 'none',
+  description: () => 'Date (milliseconds since epoch)',
   read: (o: Jsonifyable): Date => {
     const d = new Date(parseFloat(o));
     return isNaN(d.getTime()) ? validationError('dateUnixMillis', o) : d;
@@ -68,6 +70,7 @@ export const dateUnixMillis: Type<Date> = {
 
 export const dateIso: Type<Date> = {
   container: 'none',
+  description: () => 'Date (ISO)',
   read: (o: Jsonifyable): Date => {
     const d = new Date(o ? o.toString() : '');
     return isNaN(d.getTime()) ? validationError('dateIso', o) : d;
@@ -80,6 +83,7 @@ export const dateIso: Type<Date> = {
 
 export const str: Type<string> = {
   container: 'none',
+  description: () => 'string',
   read: (o: Jsonifyable): string => {
     return typeof o == 'string' ? o : validationError('string', o);
   },
@@ -91,12 +95,14 @@ export const str: Type<string> = {
 
 export const nothing: Type<void> = {
   container: 'none',
+  description: () => 'nothing',
   read: (o: any): void => {},
   write: o => ''
 }
 
 export const bool: Type<boolean> = {
   container: 'none',
+  description: () => 'boolean',
   read: (o: any): boolean => typeof o == 'boolean' ? o : validationError('boolean', o),
   write: o => 
     typeof(o) == 'boolean'
@@ -106,6 +112,7 @@ export const bool: Type<boolean> = {
 
 export const int: Type<number> = {
   container: 'none',
+  description: () => 'integer',
   read: (o: any): number => {
     const i = parseInt(o);
     return isNaN(i) ? validationError('integer', o) : i;
@@ -118,6 +125,7 @@ export const int: Type<number> = {
 
 export const float: Type<number> = {
   container: 'none',
+  description: () => 'float',
   read: (o: any): number => {
     const i = parseFloat(o);
     return isNaN(i) ? validationError('float', o) : i;
@@ -130,6 +138,7 @@ export const float: Type<number> = {
 
 export const raw: Type<any> = {
   container: 'none',
+  description: () => 'raw',
   read: o => o,
   write: o => o
 }
@@ -138,6 +147,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}
 
 export const uuid: Type<string> = {
   container: 'none',
+  description: () => 'uuid',
   read: (o: Jsonifyable): string => {
     return typeof o == 'string' && o.match(UUID_REGEX)
       ? o
@@ -153,6 +163,7 @@ export const uuid: Type<string> = {
 export function optional<T>(s: Type<T>): Type<T | undefined> {
   return {
     container: 'none',
+    description: () => 'null | ' + s.description(),
     read: (o: Jsonifyable): T | undefined => o == null ? undefined : s.read(o),
     write: (t: T | undefined): Jsonifyable => t == null ? null : s.write(t)
   }
@@ -161,6 +172,7 @@ export function optional<T>(s: Type<T>): Type<T | undefined> {
 export function nullable<T>(s: Type<T>): Type<T | null> {
   return {
     container: 'none',
+    description: () => 'null | ' + s.description(),
     read: (o: Jsonifyable): T | null => o == null ? null : s.read(o),
     write: (t: T | null): Jsonifyable => t == null ? null : s.write(t)
   }
@@ -169,6 +181,7 @@ export function nullable<T>(s: Type<T>): Type<T | null> {
 export function array<T>(s: Type<T>): List<T[]> {
   return {
     container: 'list',
+    description: () => `[${s.description()},...]`,
     read: (o: any): T[] => {
       return o instanceof Array ? o.map(s.read) : validationError('array', o);
     },
@@ -208,11 +221,9 @@ export function obj<T extends Record<string, Type<any>>>(def: T)
 
   return {
     container: 'obj',
+    description: () => "{" + Object.keys(def).map(k => `"${k}": ${def[k].description()}`).join(', ') + "}",
     read,
     write,
-    read_with_defaults: (defaults: R, o: Jsonifyable) => {
-      return read({ ...write(defaults), ...o });
-    },
   }
 }
 
@@ -250,11 +261,9 @@ export function partial_obj<T extends Record<string, Type<any>>>(def: T)
 
   return {
     container: 'obj',
+    description: () => "{" + Object.keys(def).map(k => `"${k}"?: ${def[k].description()}`).join(', ') + "}",
     read,
     write,
-    read_with_defaults: (defaults: R, o: Jsonifyable) => {
-      return read({ ...write(defaults), ...o });
-    },
   }
 }
 
@@ -264,6 +273,7 @@ export function tuple<T extends Array<Serializer<any>>>(...def: T)
   type R = { [key in keyof T]: T[key] extends Serializer<any> ? TypeEncapsulatedBy<T[key]> : never };
   return {
     container: 'tuple',
+    description: () => "[" + def.map((d, i) => d.description()).join(', ') + "]",
     read: (o: Jsonifyable): R => {
       if (o instanceof Array) {
         return def.map((d, i) => d.read(o[i])) as any;
@@ -284,6 +294,7 @@ export function oneOf<T>(def: T)
   type R = keyof T;
   return {
     container: 'sumtype',
+    description: () => Object.keys(def).map(k => `"${k}"`).join(' | '),
     read: (o: Jsonifyable): R => {
       if (Object.keys(def).indexOf(o) != -1) {
         return o;
@@ -523,6 +534,10 @@ export function variant(...args) {
 
   // @ts-ignore
   return {
+    description: () =>
+      variantTypes.map((t, i) => 
+        `({"type": "${t}"} & ${variantSerializers[i].description()})`
+      ).join(' | '),
     read: (o: Jsonifyable): R => {
       const i = variantTypes.indexOf(o.type);
       if (i == -1) {

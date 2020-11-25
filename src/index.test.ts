@@ -1,9 +1,27 @@
 import * as Safe from './index';
 
-// note the ts-ignore on various tests that the type system would reject
-// at build time, but could arise due to bad code managing the type boundary.
-
 describe('Type-safe composable serializers', () => {
+  test('description', () => {
+    expect(Safe.str.description()).toEqual("string");
+    expect(Safe.optional(Safe.str).description()).toEqual("null | string");
+    expect(Safe.array(Safe.dateIso).description()).toEqual("[Date (ISO),...]");
+    expect(Safe.array(Safe.dateUnixSecs).description()).toEqual("[Date (seconds since epoch),...]");
+    expect(Safe.array(Safe.dateUnixMillis).description()).toEqual("[Date (milliseconds since epoch),...]");
+    expect(Safe.nothing.description()).toEqual("nothing");
+    expect(Safe.bool.description()).toEqual("boolean");
+    expect(Safe.raw.description()).toEqual("raw");
+    expect(Safe.uuid.description()).toEqual("uuid");
+    expect(Safe.nullable(Safe.uuid).description()).toEqual("null | uuid");
+    expect(Safe.obj({ x: Safe.str, y: Safe.int }).description()).toEqual(`{"x": string, "y": integer}`);
+    expect(Safe.partial_obj({ x: Safe.str, y: Safe.int }).description()).toEqual(`{"x"?: string, "y"?: integer}`);
+    expect(Safe.tuple(Safe.str, Safe.float).description()).toEqual("[string, float]");
+    expect(Safe.oneOf({ apple: '', orange: '' }).description()).toEqual('"apple" | "orange"');
+    expect(Safe.variant(
+      'circle', Safe.obj({ radius: Safe.float }),
+      'person', Safe.obj({ name: Safe.str }),
+    ).description()).toEqual('({"type": "circle"} & {"radius": float}) | ({"type": "person"} & {"name": string})');
+  });
+
   test('partial_obj', () => {
     const s = Safe.partial_obj({
       x: Safe.str,
@@ -12,8 +30,7 @@ describe('Type-safe composable serializers', () => {
     const o = { y: [1,2,3] };
 
     expect(s.read(s.write(o))).toEqual(o);
-    // @ts-ignore
-    expect(() => s.write([])).toThrowError(Safe.ValidationError);
+    expect(() => s.write([] as any)).toThrowError(Safe.ValidationError);
     expect(() => s.read([])).toThrowError(Safe.ValidationError);
   });
 
@@ -25,20 +42,9 @@ describe('Type-safe composable serializers', () => {
     const o = { x: 'hi', y: [1,2,3] };
 
     expect(s.read(s.write(o))).toEqual(o);
-    // @ts-ignore
-    expect(() => s.write([])).toThrowError(Safe.ValidationError);
+    expect(() => s.write(1 as any)).toThrowError(Safe.ValidationError);
+    expect(() => s.write([] as any)).toThrowError(Safe.ValidationError);
     expect(() => s.read([])).toThrowError(Safe.ValidationError);
-  });
-
-  test('obj.read_with_defaults', () => {
-    const s = Safe.obj({
-      x: Safe.str,
-      y: Safe.array(Safe.int)
-    });
-    const o = { x: 'hi' };
-
-    expect(() => s.read(o)).toThrowError(Safe.ValidationError);
-    expect(s.read_with_defaults({x: 'oi', y:[1,2,3]}, o)).toEqual({ x: 'hi', y: [1,2,3] });
   });
 
   test('nothing', () => {
@@ -55,16 +61,14 @@ describe('Type-safe composable serializers', () => {
     const s = Safe.array(Safe.int);
     expect(s.read(s.write([1,2,3,4]))).toEqual([1,2,3,4]);
     expect(() => s.read({})).toThrowError(Safe.ValidationError);
-    // @ts-ignore
-    expect(() => s.write({})).toThrowError(Safe.ValidationError);
+    expect(() => s.write({} as any)).toThrowError(Safe.ValidationError);
   });
 
   test('boolean', () => {
     expect(Safe.bool.read(Safe.bool.write(true))).toBeTruthy();
     expect(Safe.bool.read(Safe.bool.write(false))).toBeFalsy();
     expect(() => Safe.bool.read('true')).toThrowError(Safe.ValidationError);
-    // @ts-ignore
-    expect(() => Safe.bool.write('true')).toThrowError(Safe.ValidationError);
+    expect(() => Safe.bool.write('true' as any)).toThrowError(Safe.ValidationError);
   });
 
   test('tuple', () => {
@@ -72,8 +76,7 @@ describe('Type-safe composable serializers', () => {
     expect(s.read(s.write(["hi", undefined]))).toEqual(["hi", undefined]);
     expect(s.read(s.write(["hi", [2,3]]))).toEqual(["hi", [2,3]]);
     expect(() => s.read({})).toThrowError(Safe.ValidationError);
-    // @ts-ignore
-    expect(() => s.write({})).toThrowError(Safe.ValidationError);
+    expect(() => s.write({} as any)).toThrowError(Safe.ValidationError);
   });
 
   test('dateIso', () => {
@@ -81,16 +84,14 @@ describe('Type-safe composable serializers', () => {
     expect(Safe.dateIso.read(Safe.dateIso.write(d))).toEqual(d);
     expect(() => Safe.dateIso.read('blah')).toThrowError(Safe.ValidationError);
     expect(() => Safe.dateIso.read(null)).toThrowError(Safe.ValidationError);
-    // @ts-ignore
-    expect(() => Safe.dateIso.write('blah')).toThrowError(Safe.ValidationError);
+    expect(() => Safe.dateIso.write('blah' as any)).toThrowError(Safe.ValidationError);
   });
 
   test('dateUnixSecs', () => {
     const d = new Date();
     expect(Safe.dateUnixSecs.read(123456789.0)).toEqual(new Date(123456789000));
     expect(Safe.dateUnixSecs.read(Safe.dateUnixSecs.write(d))).toEqual(d);
-    // @ts-ignore
-    expect(() => Safe.dateUnixSecs.write('blah')).toThrowError(Safe.ValidationError);
+    expect(() => Safe.dateUnixSecs.write('blah' as any)).toThrowError(Safe.ValidationError);
     expect(() => Safe.dateUnixSecs.read('blah')).toThrowError(Safe.ValidationError);
     expect(() => Safe.dateUnixSecs.read(null)).toThrowError(Safe.ValidationError);
   });
@@ -99,8 +100,7 @@ describe('Type-safe composable serializers', () => {
     const d = new Date();
     expect(Safe.dateUnixMillis.read(123456789.0)).toEqual(new Date(123456789));
     expect(Safe.dateUnixMillis.read(Safe.dateUnixMillis.write(d))).toEqual(d);
-    // @ts-ignore
-    expect(() => Safe.dateUnixMillis.write('blah')).toThrowError(Safe.ValidationError);
+    expect(() => Safe.dateUnixMillis.write('blah' as any)).toThrowError(Safe.ValidationError);
     expect(() => Safe.dateUnixMillis.read('blah')).toThrowError(Safe.ValidationError);
     expect(() => Safe.dateUnixMillis.read(null)).toThrowError(Safe.ValidationError);
   });
@@ -112,22 +112,19 @@ describe('Type-safe composable serializers', () => {
 
   test('str', () => {
     expect(Safe.str.read(Safe.str.write("hi"))).toEqual("hi");
-    // @ts-ignore
-    expect(() => Safe.str.write(1)).toThrowError(Safe.ValidationError);
+    expect(() => Safe.str.write(1 as any)).toThrowError(Safe.ValidationError);
     expect(() => Safe.str.read(null)).toThrowError(Safe.ValidationError);
   });
 
   test('int', () => {
     expect(Safe.int.read(Safe.int.write(123))).toEqual(123);
-    // @ts-ignore
-    expect(() => Safe.int.write('hi')).toThrowError(Safe.ValidationError);
+    expect(() => Safe.int.write('hi' as any)).toThrowError(Safe.ValidationError);
     expect(() => Safe.int.read("erm")).toThrowError(Safe.ValidationError);
   });
 
   test('float', () => {
     expect(Safe.float.read(Safe.float.write(123.45))).toEqual(123.45);
-    // @ts-ignore
-    expect(() => Safe.float.write('hi')).toThrowError(Safe.ValidationError);
+    expect(() => Safe.float.write('hi' as any)).toThrowError(Safe.ValidationError);
     expect(() => Safe.float.read("erm")).toThrowError(Safe.ValidationError);
   });
 
@@ -136,8 +133,7 @@ describe('Type-safe composable serializers', () => {
     expect(s.read('a')).toEqual('a');
     expect(() => s.read('c')).toThrowError(Safe.ValidationError);
     expect(s.write('a')).toEqual('a');
-    // @ts-ignore
-    expect(() => s.write('c')).toThrowError(Safe.ValidationError);
+    expect(() => s.write('c' as any)).toThrowError(Safe.ValidationError);
   });
 
   test('variant', () => {
@@ -166,8 +162,7 @@ describe('Type-safe composable serializers', () => {
     ).toThrowError(Safe.ValidationError);
 
     expect(
-      // @ts-ignore
-      () => s.write({type: 'nonsense'})
+      () => s.write({type: 'nonsense'} as any)
     ).toThrowError(Safe.ValidationError);
   });
 
