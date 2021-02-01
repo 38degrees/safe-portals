@@ -130,6 +130,7 @@ describe('Type-safe composable serializers', () => {
 
   test('dateIso', () => {
     const d = new Date();
+    expect(Safe.dateIso.read(d)).toEqual(d);
     expect(Safe.dateIso.read(Safe.dateIso.write(d))).toEqual(d);
     expect(() => Safe.dateIso.read('blah')).toThrowError(Safe.ValidationError);
     expect(() => Safe.dateIso.read(null)).toThrowError(Safe.ValidationError);
@@ -138,6 +139,7 @@ describe('Type-safe composable serializers', () => {
 
   test('dateUnixSecs', () => {
     const d = new Date();
+    expect(Safe.dateUnixSecs.read(d)).toEqual(d);
     expect(Safe.dateUnixSecs.read(123456789.0)).toEqual(new Date(123456789000));
     expect(Safe.dateUnixSecs.read(Safe.dateUnixSecs.write(d))).toEqual(d);
     expect(() => Safe.dateUnixSecs.write('blah' as any)).toThrowError(Safe.ValidationError);
@@ -147,6 +149,7 @@ describe('Type-safe composable serializers', () => {
 
   test('dateUnixMillis', () => {
     const d = new Date();
+    expect(Safe.dateUnixMillis.read(d)).toEqual(d);
     expect(Safe.dateUnixMillis.read(123456789.0)).toEqual(new Date(123456789));
     expect(Safe.dateUnixMillis.read(Safe.dateUnixMillis.write(d))).toEqual(d);
     expect(() => Safe.dateUnixMillis.write('blah' as any)).toThrowError(Safe.ValidationError);

@@ -76,7 +76,7 @@ export const dateUnixSecs: Type<Date> = {
   container: 'none',
   description: () => 'Date (seconds since epoch)',
   read: (o: Jsonifyable): Date => {
-    const d = new Date(typeof o == 'number' ? o * 1000.0 : validationError("DateUnixSecs", o));
+    const d = new Date(typeof o == 'number' ? o * 1000.0 : (o instanceof Date ? o : validationError("DateUnixSecs", o)));
     return isNaN(d.getTime()) ? validationError('dateUnixSecs', o) : d;
   },
   write: t =>
@@ -89,7 +89,7 @@ export const dateUnixMillis: Type<Date> = {
   container: 'none',
   description: () => 'Date (milliseconds since epoch)',
   read: (o: Jsonifyable): Date => {
-    const d = new Date(typeof o == 'number' ? o : validationError("DateUnixMillis", o));
+    const d = new Date(typeof o == 'number' ? o : (o instanceof Date ? o : validationError("DateUnixMillis", o)));
     return isNaN(d.getTime()) ? validationError('dateUnixMillis', o) : d;
   },
   write: t =>
@@ -102,7 +102,7 @@ export const dateIso: Type<Date> = {
   container: 'none',
   description: () => 'Date (ISO)',
   read: (o: Jsonifyable): Date => {
-    const d = new Date(typeof o == 'string' ? o : validationError('IsoDateString', o));
+    const d = new Date(typeof o == 'string' ? o : (o instanceof Date ? o : validationError('IsoDateString', o)));
     return isNaN(d.getTime()) ? validationError('dateIso', o) : d;
   },
   write: t =>
