@@ -2,14 +2,17 @@
 
 ### Type-safe, validated, composable serialization/unserialization
 
-#### Version 2.0 changes
+#### Why?
 
-ParseError has been renamed to ValidationError
+Safe-portals solves 3 problems with (JSON) serialization in JS/Typescript:
 
-Type<T>.write methods now throw ValidationError if you attempt to
-write invalid types (which the type system would prevent for many types,
-but is possible for others (uuid), and possible where 'any' types are
-being used.
+ * Many types are not handled. For example, `Date` objects are deserialized
+   from JSON as strings. We want the original data to be unchanged by going
+   through serialization and deserialization.
+ * The schema of our data is not validated.
+ * In TypeScript, data emerges from JSON.parse as `any` type. We would prefer
+   to recover type annotations once the data has been validated as matching
+   our expected schema.
 
 #### Basics
 
@@ -65,7 +68,181 @@ and
 portal.read(JSON.parse(receive()))
 ```
 
-#### Composite types
+#### Basic portal (serializer/deserializer) types
+
+##### Safe.str
+
+Portal for `string` type.
+
+##### Safe.bool
+Portal for `boolean` type.
+
+##### Safe.int
+Portal for `number` type, truncated to an integer.
+
+##### Safe.float
+Portal for `number` type, allowing decimals.
+
+##### Safe.dateUnixSecs
+Portal for `Date` type, with seconds since the Unix epoch as the
+serialized representation.
+
+##### Safe.dateUnixMillis
+Portal for `Date` type, with milliseconds since the Unix epoch as the
+serialized representation.
+
+##### Safe.dateIso
+Portal for `Date` type, with ISO 8601 as the serialized representation.
+
+##### Safe.uuid
+Portal for `string` type, validating that the string is a uuid.
+
+##### Safe.raw
+Portal for `any` type. Allows passthrough to plain JSON
+stringify/parse behavior.
+
+##### Safe.versioned({ schema: t, migrations: [...] })
+Portal for the type given by the `schema` portal, with an ordered list
+of data migration that will be run (first to last) before schema.read(),
+to lazily migrate the data. For example:
+
+```TS
+const v1 = Safe.versioned({
+	schema: Safe.obj({ x: Safe.dateIso }),
+	migrations: []
+});
+```
+This serializer handles data of the form `{x: new Date() }`. Supposing
+we wished to change the serialized representation from dateIso to
+dateUnixSecs, we could revise our serializer in this way:
+```TS
+const v2 = Safe.versioned({
+	schema: Safe.obj({ x: Safe.dateUnixSecs }),
+	migrations: [
+		o => ({ x: Safe.dateUnixSecs.write(Safe.dateIso.read(o.x)) })
+	]
+});
+```
+
+##### Safe.optional(t)
+Adds optionality to the portal argument `t`. Eg:
+
+```TS
+Safe.optional(Safe.str)
+```
+is a portal for the type `string | undefined`
+
+##### Safe.nullable(t)
+Adds nullability to the portal argument `t`. Eg:
+
+```TS
+Safe.nullable(Safe.str)
+```
+is a portal for the type `string | null`
+
+##### Safe.array(t)
+Portal for an array of the type that portal `t` handles. Eg:
+
+```TS
+Safe.array(Safe.float)
+```
+is a portal for the type `number[]`
+
+##### Safe.obj({ ... })
+Portal for arbitrary object types. Eg:
+
+```TS
+Safe.obj({
+    name: Safe.str,
+    date_of_birth: Safe.dateIso,
+    date_of_death: Safe.optional(Safe.dateIso),
+})
+```
+Is a portal for the type:
+
+```TS
+{
+    name: string;
+    date_of_birth: Date;
+    date_of_death: Date | undefined;
+}
+```
+
+##### Safe.partial_obj({ ... })
+A fully optional version of `obj`. Eg:
+
+```TS
+Safe.partial_obj({
+    name: Safe.str,
+    date_of_birth: Safe.dateIso,
+    date_of_death: Safe.optional(Safe.dateIso),
+})
+```
+Is a portal for the type:
+
+```TS
+{
+    name?: string;
+    date_of_birth?: Date;
+    date_of_death?: Date | undefined;
+}
+```
+
+##### Safe.tuple(t1, t2, ...)
+A portal for an array-as-tuple type. Eg:
+
+```TS
+Safe.tuple(Safe.str, Safe.float, Safe.dateIso)
+```
+
+Is a portal for the type:
+
+```TS
+[string, number, Date]
+```
+
+##### Safe.oneOf({ ... })
+A portal for a string enum type. Eg:
+
+```TS
+Safe.oneOf({
+    apple: '',
+    orange: '',
+    pear: ''
+})
+```
+
+Is a portal for the type:
+
+```TS
+'apple' | 'orange' | 'pear'
+```
+
+##### Safe.variant(tag1, variant1, tag2, variant2, ...)
+A portal for a tagged-union type. Eg:
+
+```TS
+Safe.variant(
+	'circle', Safe.obj({ radius: Safe.float }),
+	'rectangle', Safe.obj({ width: Safe.float, height: Safe.float }),
+)
+```
+
+Is a portal for the type:
+
+```TS
+{ type: 'circle', radius: float } |
+{ type: 'rectangle', width: float, height: float }
+```
+
+##### Safe.Result.result({ ok: t1, error: t2 })
+A (experimental) portal for a 'success or failure' type, allowing a means of passing
+exceptional conditions across serialization boundaries in a type-safe manner.
+
+Consult [result.test.ts](./src/result.test.ts) for example usage.
+    
+
+#### Using composite types
 
 You can build type-portals for types like tuples, arrays and objects:
 

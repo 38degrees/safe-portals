@@ -18,7 +18,7 @@ export const validationError = (wanted: string, got: any): never => {
   throw new ValidationError(wanted, got)
 }
 
-type Jsonifyable = any;
+export type Jsonifyable = any;
 // ^^ purely documentary type. Not really useful to do right, but the following would be 'correct' (and requires TS 3.7+)
 // type Jsonifyable = string | number | boolean | null | Jsonifyable[] | { [key: string]: Jsonifyable };
 type Reader<T> = (o: Jsonifyable) => T;
@@ -42,6 +42,7 @@ export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | Date
  */
 export type TypeEncapsulatedBy<T extends Serializer<any>> = ReturnType<T['read']>;
 export type TypeIn<T extends Serializer<any>> = TypeEncapsulatedBy<T>;
+
 
 type VersionMigrator = (o: Jsonifyable) => Jsonifyable;
 
@@ -595,3 +596,5 @@ export function variant(...args) {
     }
   }
 }
+
+export * as Result from "./result";
