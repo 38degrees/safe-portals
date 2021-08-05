@@ -1,4 +1,4 @@
-import { Serializer, Type, validationError, Jsonifyable } from "./index";
+import { Obj, Type, validationError, Jsonifyable } from "./index";
 
 /**
  * Result type, for passing exceptional conditions across serialization boundaries
@@ -14,11 +14,10 @@ export function isErr<R, E>(r: Result<R, E>): r is Err<E> {
   // @ts-ignore
   return r.error !== undefined ? true : false;
 }
-export interface ResultSerializer<T> extends Serializer<T> { container: 'result' }
 
-export function serializer<R, E>(serializers: { ok: Type<R>, error: Type<E> }): ResultSerializer<Result<R, E>> {
+export function serializer<R, E>(serializers: { ok: Type<R>, error: Type<E> }): Obj<Result<R, E>> {
   return {
-    container: 'result',
+    container: 'obj',
     description: () => `Result<${serializers.ok.description()},${serializers.error.description()}>`,
     read: (o: any): Result<R, E> => {
       if (!(o instanceof Object)) return validationError('object', o);
