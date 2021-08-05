@@ -1,6 +1,6 @@
 {
   "name": "safe-portals",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Type-safe symmetric composable serializers",
   "main": "dist/index.js",
   "types": "dist/index.d.js",
@@ -11,6 +11,12 @@
   },
   "author": "Tom Morton <tom.m@38degrees.org.uk>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/38degrees/safe-portals.git"
+  },
+  "homepage": "https://github.com/38degrees/safe-portals",
+  "keywords": ["serialization", "validation", "json", "schema"],
   "files": [
     "src/**/*.ts",
     "dist/**/*.d.ts",
