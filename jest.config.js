@@ -3,7 +3,7 @@ module.exports = {
     "src"
   ],
   transform: {
-    "^.+\\.ts$": "ts-jest"
+    "^.+\\.ts$": ["@swc-node/jest"]
   },
   verbose: true
 }
