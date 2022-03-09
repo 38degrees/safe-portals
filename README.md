@@ -201,15 +201,11 @@ Is a portal for the type:
 [string, number, Date]
 ```
 
-##### Safe.oneOf({ ... })
+##### Safe.oneOf(a, b, c, ...)
 A portal for a string enum type. Eg:
 
 ```TS
-Safe.oneOf({
-    apple: '',
-    orange: '',
-    pear: ''
-})
+Safe.oneOf('apple', 'orange', 'pear')
 ```
 
 Is a portal for the type:

@@ -64,7 +64,7 @@ describe('Type-safe composable serializers', () => {
     expect(Safe.obj({ x: Safe.str, y: Safe.int }).description()).toEqual(`{"x": string, "y": integer}`);
     expect(Safe.partial_obj({ x: Safe.str, y: Safe.int }).description()).toEqual(`{"x"?: string, "y"?: integer}`);
     expect(Safe.tuple(Safe.str, Safe.float).description()).toEqual("[string, float]");
-    expect(Safe.oneOf({ apple: '', orange: '' }).description()).toEqual('"apple" | "orange"');
+    expect(Safe.oneOf("apple", "orange").description()).toEqual('"apple" | "orange"');
     expect(Safe.variant(
       'circle', Safe.obj({ radius: Safe.float }),
       'person', Safe.obj({ name: Safe.str }),
@@ -181,7 +181,7 @@ describe('Type-safe composable serializers', () => {
   });
 
   test('sumtype (oneOf)', () => {
-    const s = Safe.oneOf({a:'', b:''});
+    const s = Safe.oneOf("a", "b");
     expect(s.read('a')).toEqual('a');
     expect(() => s.read('c')).toThrowError(Safe.ValidationError);
     expect(s.write('a')).toEqual('a');
