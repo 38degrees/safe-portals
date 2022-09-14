@@ -6,16 +6,17 @@
  * URLs), in order to maintain static analysis across the un-typed boundary.
  */
 export class ValidationError extends Error {
-  constructor(wanted: string, got: any) {
-    super(`ValidationError: expected ${wanted} but found ${JSON.stringify(got)}`);
+  constructor(public path: string, public got: any) {
+    super();
+    this.message = `data${this.path} does not match serializer in data ${JSON.stringify(this.got)}`;
     // needed because JS is silly
     // @ts-ignore
     Object.setPrototypeOf(this, ValidationError.prototype);
   }
 }
 // why this wrapper with 'never' type? so we can put error handling into expressions
-export const validationError = (wanted: string, got: any): never => {
-  throw new ValidationError(wanted, got)
+export const validationError = (path: string, got: any): never => {
+  throw new ValidationError(path, got)
 }
 
 export type Jsonifyable = any;
@@ -43,7 +44,6 @@ export type Type<T> = Tuple<T> | List<T> | Value<T> | Obj<T> | DateIso<T> | Date
 export type TypeEncapsulatedBy<T extends Serializer<any>> = ReturnType<T['read']>;
 export type TypeIn<T extends Serializer<any>> = TypeEncapsulatedBy<T>;
 
-
 type VersionMigrator = (o: Jsonifyable) => Jsonifyable;
 
 /**
@@ -57,7 +57,7 @@ export function versioned<T>(args: { schema: Type<T>; migrations: VersionMigrato
   const inner = tuple(int, raw);
   return {
     container: 'versioned',
-    description: () => "[version, "+args.schema.description() + (args.migrations.length > 0 ? " or previous version]" : ']'),
+    description: () => "versioned({schema: "+args.schema.description()+", migrations: ...})",
     read: (_o: Jsonifyable): T => {
       const o = inner.read(_o);
       let ver = o[0];
@@ -75,56 +75,56 @@ export function versioned<T>(args: { schema: Type<T>; migrations: VersionMigrato
 
 export const dateUnixSecs: Type<Date> = {
   container: 'none',
-  description: () => 'Date (seconds since epoch)',
+  description: () => 'dateUnixSecs',
   read: (o: Jsonifyable): Date => {
     // @ts-ignore hmm look into this XXX
-    const d = new Date(typeof o == 'number' ? o * 1000.0 : (o instanceof Date ? o : validationError("DateUnixSecs", o)));
-    return isNaN(d.getTime()) ? validationError('dateUnixSecs', o) : d;
+    const d = new Date(typeof o == 'number' ? o * 1000.0 : (o instanceof Date ? o : validationError('', o)));
+    return isNaN(d.getTime()) ? validationError('', o) : d;
   },
   write: t =>
     t instanceof Date
     ? t.getTime() / 1000.0
-    : validationError('Date', t)
+    : validationError('', t)
 };
 
 export const dateUnixMillis: Type<Date> = {
   container: 'none',
-  description: () => 'Date (milliseconds since epoch)',
+  description: () => 'dateUnixMillis',
   read: (o: Jsonifyable): Date => {
     // @ts-ignore
-    const d = new Date(typeof o == 'number' ? o : (o instanceof Date ? o : validationError("DateUnixMillis", o)));
-    return isNaN(d.getTime()) ? validationError('dateUnixMillis', o) : d;
+    const d = new Date(typeof o == 'number' ? o : (o instanceof Date ? o : validationError("", o)));
+    return isNaN(d.getTime()) ? validationError('', o) : d;
   },
   write: t =>
     t instanceof Date
     ? t.getTime()
-    : validationError('Date', t)
+    : validationError('', t)
 };
 
 export const dateIso: Type<Date> = {
   container: 'none',
-  description: () => 'Date (ISO)',
+  description: () => 'dateIso',
   read: (o: Jsonifyable): Date => {
     // @ts-ignore
-    const d = new Date(typeof o == 'string' ? o : (o instanceof Date ? o : validationError('IsoDateString', o)));
-    return isNaN(d.getTime()) ? validationError('dateIso', o) : d;
+    const d = new Date(typeof o == 'string' ? o : (o instanceof Date ? o : validationError('', o)));
+    return isNaN(d.getTime()) ? validationError('', o) : d;
   },
   write: t =>
     t instanceof Date
     ? t.toISOString()
-    : validationError('Date', t)
+    : validationError('', t)
 };
 
 export const str: Type<string> = {
   container: 'none',
-  description: () => 'string',
+  description: () => 'str',
   read: (o: Jsonifyable): string => {
-    return typeof o == 'string' ? o : validationError('string', o);
+    return typeof o == 'string' ? o : validationError('', o);
   },
   write: t =>
     typeof(t) == 'string'
     ? t
-    : validationError('string', t)
+    : validationError('', t)
 }
 
 export const nothing: Type<void> = {
@@ -136,25 +136,25 @@ export const nothing: Type<void> = {
 
 export const bool: Type<boolean> = {
   container: 'none',
-  description: () => 'boolean',
-  read: (o: any): boolean => typeof o == 'boolean' ? o : validationError('boolean', o),
+  description: () => 'bool',
+  read: (o: any): boolean => typeof o == 'boolean' ? o : validationError('', o),
   write: o => 
     typeof(o) == 'boolean'
     ? o
-    : validationError('boolean', o)
+    : validationError('', o)
 }
 
 export const int: Type<number> = {
   container: 'none',
-  description: () => 'integer',
+  description: () => 'int',
   read: (o: any): number => {
     const i = parseInt(o);
-    return isNaN(i) ? validationError('integer', o) : i;
+    return isNaN(i) ? validationError('', o) : i;
   },
   write: o => 
     typeof(o) == 'number'
     ? o
-    : validationError('number', o)
+    : validationError('', o)
 }
 
 export const float: Type<number> = {
@@ -162,12 +162,12 @@ export const float: Type<number> = {
   description: () => 'float',
   read: (o: any): number => {
     const i = parseFloat(o);
-    return isNaN(i) ? validationError('float', o) : i;
+    return isNaN(i) ? validationError('', o) : i;
   },
   write: o => 
     typeof(o) == 'number'
     ? o
-    : validationError('number', o)
+    : validationError('', o)
 }
 
 export const raw: Type<any> = {
@@ -185,19 +185,19 @@ export const uuid: Type<string> = {
   read: (o: Jsonifyable): string => {
     return typeof o == 'string' && o.match(UUID_REGEX)
       ? o
-      : validationError('uuid', o);
+      : validationError('', o);
   },
   write: t => {
     return typeof t == 'string' && t.match(UUID_REGEX)
       ? t
-      : validationError('uuid', t);
+      : validationError('', t);
   }
 }
 
 export function optional<T>(s: Type<T>): Type<T | undefined> {
   return {
     container: 'none',
-    description: () => 'null | ' + s.description(),
+    description: () => 'optional(' + s.description() + ')',
     read: (o: Jsonifyable): T | undefined => o == null ? undefined : s.read(o),
     write: (t: T | undefined): Jsonifyable => t == null ? null : s.write(t)
   }
@@ -206,7 +206,7 @@ export function optional<T>(s: Type<T>): Type<T | undefined> {
 export function nullable<T>(s: Type<T>): Type<T | null> {
   return {
     container: 'none',
-    description: () => 'null | ' + s.description(),
+    description: () => 'nullable(' + s.description() + ')',
     read: (o: Jsonifyable): T | null => o == null ? null : s.read(o),
     write: (t: T | null): Jsonifyable => t == null ? null : s.write(t)
   }
@@ -215,14 +215,40 @@ export function nullable<T>(s: Type<T>): Type<T | null> {
 export function array<T>(s: Type<T>): List<T[]> {
   return {
     container: 'list',
-    description: () => `[${s.description()},...]`,
+    description: () => `array(${s.description()})`,
     read: (o: any): T[] => {
-      return o instanceof Array ? o.map(s.read) : validationError('array', o);
+      if (!(o instanceof Array)) validationError('', o);
+      let out = [];
+      for (let i=0; i<o.length; i++) {
+        try {
+          out.push(s.read(o[i]));
+        } catch (e) {
+          if (e instanceof ValidationError) {
+            return validationError('[' + i + ']' + e.path, o);
+          }
+          throw e;
+        }
+      }
+      return out;
     },
-    write: (o: T[]): Jsonifyable =>
-      o instanceof Array
-      ? o.map(s.write)
-      : validationError('array', o)
+    write: (o: T[]): Jsonifyable => {
+      if (o instanceof Array) {
+        const out = [];
+        for (let i=0; i<o.length; i++) {
+          try {
+            out.push(s.write(o[i]));
+          } catch (e) {
+            if (e instanceof ValidationError) {
+              return validationError('[' + i + ']' + e.path, o);
+            }
+            throw e;
+          }
+        }
+        return out;
+      } else {
+        validationError('', o);
+      }
+    }
   }
 }
 
@@ -233,29 +259,43 @@ export function obj<T extends Record<string, Type<any>>>(def: T)
 
   const read = (o: Jsonifyable): R => {
     if (!(o instanceof Object) || (o instanceof Array)) {
-      return validationError('an object', o);
+      return validationError('', o);
     }
 
     const out: any = {};
     for (let key of Object.keys(def)) {
-      out[key] = def[key].read(o[key]);
+      try {
+        out[key] = def[key].read(o[key]);
+      } catch (e) {
+        if (e instanceof ValidationError) {
+          return validationError('.' + key + e.path, o);
+        }
+        throw e;
+      }
     }
     return out;
   };
 
   const write = (r: R): Jsonifyable => {
-    if (!(r instanceof Object)) return validationError('object', r);
+    if (!(r instanceof Object)) return validationError('', r);
 
     const out: any = {};
     for (let key of Object.keys(def)) {
-      out[key] = def[key].write(r[key]);
+      try {
+        out[key] = def[key].write(r[key]);
+      } catch (e) {
+        if (e instanceof ValidationError) {
+          return validationError('.' + key + e.path, r);
+        }
+        throw e;
+      }
     }
     return out;
   };
 
   return {
     container: 'obj',
-    description: () => "{" + Object.keys(def).map(k => `"${k}": ${def[k].description()}`).join(', ') + "}",
+    description: () => `obj({${Object.keys(def).map(k => `${k}: ${def[k].description()}`).join(', ')}})`,
     read,
     write,
   }
@@ -271,31 +311,45 @@ export function partial_obj<T extends Record<string, Type<any>>>(def: T)
 
   const read = (o: Jsonifyable): R => {
     if (!(o instanceof Object) || (o instanceof Array)) {
-      return validationError('an object', o);
+      return validationError('', o);
     }
 
     const out: any = {};
     for (let key of Object.keys(def)) {
-      out[key] = optional(def[key]).read(o[key]);
+      try {
+        out[key] = optional(def[key]).read(o[key]);
+      } catch (e) {
+        if (e instanceof ValidationError) {
+          return validationError('.' + key + e.path, o);
+        }
+        throw e;
+      }
     }
     return out;
   };
 
   const write = (r: R): Jsonifyable => {
     if (!(r instanceof Object) || (r instanceof Array)) {
-      return validationError('object', r);
+      return validationError('', r);
     }
 
     const out: any = {};
     for (let key of Object.keys(def)) {
-      out[key] = optional(def[key]).write(r[key]);
+      try {
+        out[key] = optional(def[key]).write(r[key]);
+      } catch (e) {
+        if (e instanceof ValidationError) {
+          return validationError('.' + key + e.path, r);
+        }
+        throw e;
+      }
     }
     return out;
   };
 
   return {
     container: 'obj',
-    description: () => "{" + Object.keys(def).map(k => `"${k}"?: ${def[k].description()}`).join(', ') + "}",
+    description: () => `partial_obj({${Object.keys(def).map(k => `${k}: ${def[k].description()}`).join(', ')}})`,
     read,
     write,
   }
@@ -307,18 +361,45 @@ export function tuple<T extends Array<Serializer<any>>>(...def: T)
   type R = { [key in keyof T]: T[key] extends Serializer<any> ? TypeEncapsulatedBy<T[key]> : never };
   return {
     container: 'tuple',
-    description: () => "[" + def.map((d, i) => d.description()).join(', ') + "]",
+    description: () => "tuple(" + def.map((d) => d.description()).join(', ') + ")",
     read: (o: Jsonifyable): R => {
       if (o instanceof Array) {
-        return def.map((d, i) => d.read(o[i])) as any;
+        const out = [];
+        let i=0;
+        try {
+          for (; i<o.length; i++) {
+            out.push(def[i].read(o[i]));
+          }
+        } catch (e) {
+          if (e instanceof ValidationError) {
+            return validationError('[' + i + ']' + e.path, o);
+          }
+          throw e;
+        }
+        return out as any;
       } else {
-        return validationError('an array', o);
+        return validationError('', o);
       }
     },
-    write: (r: R): Jsonifyable =>
-      r instanceof Array
-      ? def.map((d, i) => d.write(r[i]))
-      : validationError('array', r)
+    write: (r: R): Jsonifyable => {
+      if (r instanceof Array) {
+        const out = [];
+        let i=0;
+        try {
+          for (; i<r.length; i++) {
+            out.push(def[i].write(r[i]));
+          }
+        } catch (e) {
+          if (e instanceof ValidationError) {
+            return validationError('[' + i + ']' + e.path, r);
+          }
+          throw e;
+        }
+        return out;
+      } else {
+        return validationError('', r);
+      }
+    }
   }
 }
 
@@ -349,18 +430,18 @@ export function oneOf(...args)
   type R = any; // can't infer here
   return {
     container: 'sumtype',
-    description: () => args.map(k => `"${k}"`).join(' | '),
+    description: () => 'oneOf('+args.map(k => `"${k}"`).join(', ')+')',
     read: (o: Jsonifyable): R => {
       if (args.indexOf(o) != -1) {
         return o;
       } else {
-        return validationError(`one of ${args}`, o);
+        return validationError('', o);
       }
     },
     write: (t: R) => 
       args.indexOf(t as string) != -1
       ? t
-      : validationError(`one of ${args}`, t)
+      : validationError('', t)
   }
 }
 
@@ -590,29 +671,45 @@ export function variant(...args) {
   // @ts-ignore
   return {
     description: () =>
-      variantTypes.map((t, i) => 
-        `({"type": "${t}"} & ${variantSerializers[i].description()})`
-      ).join(' | '),
+      `variant(${
+        variantTypes.map((t, i) => 
+          `"${t}", ${variantSerializers[i].description()}`
+        ).join(', ')
+      })`,
     read: (o: Jsonifyable): R => {
       const i = variantTypes.indexOf(o.type);
       if (i == -1) {
-        return validationError(`type in ${JSON.stringify(variantTypes)}`, o);
+        return validationError('', o);
       } else {
-        return {
-          ...variantSerializers[i].read(o),
-          type: o.type
-        };
+        try {
+          return {
+            ...variantSerializers[i].read(o),
+            type: o.type
+          };
+        } catch (e) {
+          if (e instanceof ValidationError) {
+            return validationError('<' + o.type + '>' + e.path, o);
+          }
+          else throw e;
+        }
       }
     },
     write: (t: R) => {
       const i = variantTypes.indexOf(t.type);
       if (i == -1) {
-        return validationError(`type in ${JSON.stringify(variantTypes)}`, t);
+        return validationError('', t);
       } else {
-        return {
-          ...variantSerializers[i].write(t),
-          type: t.type
-        };
+        try {
+          return {
+            ...variantSerializers[i].write(t),
+            type: t.type
+          };
+        } catch (e) {
+          if (e instanceof ValidationError) {
+            return validationError('<' + t.type + '>' + e.path, t);
+          }
+          else throw e;
+        }
       }
     }
   }

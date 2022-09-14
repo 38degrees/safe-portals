@@ -7,7 +7,7 @@ describe('Type-safe composable serializers', () => {
       migrations: []
     });
 
-    expect(v1.description()).toEqual('[version, {"x": Date (ISO)}]');
+    expect(v1.description()).toEqual('versioned({schema: obj({x: dateIso}), migrations: ...})');
 
     const v1_serialized = v1.write({ x: new Date(2020, 0, 1) });
     expect(v1_serialized).toEqual([ 0, { x: "2020-01-01T00:00:00.000Z" } ]);
@@ -31,7 +31,7 @@ describe('Type-safe composable serializers', () => {
       ]
     });
     expect(v2.read(v1_serialized)).toEqual({ x: new Date(2020, 0, 1) });
-    expect(v2.description()).toEqual('[version, {"x": Date (seconds since epoch)} or previous version]');
+    expect(v2.description()).toEqual('versioned({schema: obj({x: dateUnixSecs}), migrations: ...})');
 
     const v2_serialized = v2.write(v2.read(v1_serialized));
     expect(v2_serialized).toEqual([ 1, { x: new Date(2020,0,1).getTime() / 1000.0 } ]);
@@ -51,24 +51,53 @@ describe('Type-safe composable serializers', () => {
   });
 
   test('description', () => {
-    expect(Safe.str.description()).toEqual("string");
-    expect(Safe.optional(Safe.str).description()).toEqual("null | string");
-    expect(Safe.array(Safe.dateIso).description()).toEqual("[Date (ISO),...]");
-    expect(Safe.array(Safe.dateUnixSecs).description()).toEqual("[Date (seconds since epoch),...]");
-    expect(Safe.array(Safe.dateUnixMillis).description()).toEqual("[Date (milliseconds since epoch),...]");
+    expect(Safe.str.description()).toEqual("str");
+    expect(Safe.optional(Safe.str).description()).toEqual("optional(str)");
+    expect(Safe.array(Safe.dateIso).description()).toEqual("array(dateIso)");
+    expect(Safe.array(Safe.dateUnixSecs).description()).toEqual("array(dateUnixSecs)");
+    expect(Safe.array(Safe.dateUnixMillis).description()).toEqual("array(dateUnixMillis)");
     expect(Safe.nothing.description()).toEqual("nothing");
-    expect(Safe.bool.description()).toEqual("boolean");
+    expect(Safe.bool.description()).toEqual("bool");
     expect(Safe.raw.description()).toEqual("raw");
     expect(Safe.uuid.description()).toEqual("uuid");
-    expect(Safe.nullable(Safe.uuid).description()).toEqual("null | uuid");
-    expect(Safe.obj({ x: Safe.str, y: Safe.int }).description()).toEqual(`{"x": string, "y": integer}`);
-    expect(Safe.partial_obj({ x: Safe.str, y: Safe.int }).description()).toEqual(`{"x"?: string, "y"?: integer}`);
-    expect(Safe.tuple(Safe.str, Safe.float).description()).toEqual("[string, float]");
-    expect(Safe.oneOf("apple", "orange").description()).toEqual('"apple" | "orange"');
+    expect(Safe.nullable(Safe.uuid).description()).toEqual("nullable(uuid)");
+    expect(Safe.obj({ x: Safe.str, y: Safe.int }).description()).toEqual(`obj({x: str, y: int})`);
+    expect(Safe.partial_obj({ x: Safe.str, y: Safe.int }).description()).toEqual(`partial_obj({x: str, y: int})`);
+    expect(Safe.tuple(Safe.str, Safe.float).description()).toEqual("tuple(str, float)");
+    expect(Safe.oneOf("apple", "orange").description()).toEqual('oneOf("apple", "orange")');
     expect(Safe.variant(
       'circle', Safe.obj({ radius: Safe.float }),
       'person', Safe.obj({ name: Safe.str }),
-    ).description()).toEqual('({"type": "circle"} & {"radius": float}) | ({"type": "person"} & {"name": string})');
+    ).description()).toEqual('variant(\"circle\", obj({radius: float}), \"person\", obj({name: str}))');
+  });
+
+  test('helpful error messages', () => {
+    expect(() => Safe.array(Safe.int).write(false as any)).toThrow("data does not match serializer in data false");
+    expect(() => Safe.array(Safe.int).read(false as any)).toThrow("data does not match serializer in data false");
+    expect(() => Safe.array(Safe.int).write([1,2,false] as any)).toThrow("data[2] does not match serializer in data [1,2,false]");
+    expect(() => Safe.obj({x: Safe.array( Safe.int )}).read({x:[ 1,true ]})).toThrow("data.x[1] does not match serializer in data {\"x\":[1,true]}");
+    expect(() => Safe.obj({x: Safe.array( Safe.int )}).write({x:[ 1,true ]} as any)).toThrow("data.x[1] does not match serializer in data {\"x\":[1,true]}");
+    expect(() => Safe.partial_obj({x: Safe.array( Safe.int )}).read({x:[ 1,true ]})).toThrow("data.x[1] does not match serializer in data {\"x\":[1,true]}");
+    expect(() => Safe.partial_obj({x: Safe.array( Safe.int )}).write({x:[ 1,true ]} as any)).toThrow("data.x[1] does not match serializer in data {\"x\":[1,true]}");
+    expect(() => Safe.tuple(Safe.int, Safe.str).read([12,13])).toThrow("data[1] does not match serializer in data [12,13]");
+    expect(() => Safe.tuple(Safe.int, Safe.str).write([12,13] as any)).toThrow("data[1] does not match serializer in data [12,13]");
+    {
+      const v = Safe.variant(
+        'circle', Safe.obj({ radius: Safe.float }),
+        'person', Safe.obj({ name: Safe.str }),
+      );
+      expect(() => v.read({})).toThrow("data does not match serializer in data {}");
+      expect(() => v.write({} as any)).toThrow("data does not match serializer in data {}");
+      expect(() => v.read({type: 'circle', radius: false})).toThrow("data<circle>.radius does not match serializer in data {\"type\":\"circle\",\"radius\":false}");
+      expect(() => v.write({type: 'circle', radius: false} as any)).toThrow("data<circle>.radius does not match serializer in data {\"type\":\"circle\",\"radius\":false}");
+      expect(() => v.read({type: 'blah'})).toThrow("data does not match serializer in data {\"type\":\"blah\"}");
+    }
+    /*
+    {
+      const v = Safe.versioned({ schema: Safe.obj({x: Safe.int}), migrations: [] });
+      expect(() => v.read([3, {x: 123}])).toThrow("");
+    }
+    */
   });
 
   test('partial_obj', () => {

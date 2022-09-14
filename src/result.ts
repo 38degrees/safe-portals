@@ -18,7 +18,7 @@ export function isErr<R, E>(r: Result<R, E>): r is Err<E> {
 export function serializer<R, E>(serializers: { ok: Type<R>, error: Type<E> }): Obj<Result<R, E>> {
   return {
     container: 'obj',
-    description: () => `Result<${serializers.ok.description()},${serializers.error.description()}>`,
+    description: () => `result(${serializers.ok.description()},${serializers.error.description()})`,
     read: (o: any): Result<R, E> => {
       if (!(o instanceof Object)) return validationError('object', o);
       if (o.error === undefined) {

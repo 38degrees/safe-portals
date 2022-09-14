@@ -13,7 +13,7 @@ describe('Result type and serializer', () => {
 
   test('result', () => {
     const s = Result.serializer({ ok: Safe.str, error: Safe.int });
-    expect(s.description()).toEqual("Result<string,integer>");
+    expect(s.description()).toEqual("result(str,int)");
 
     expect(s.write({ ok: "hi" })).toEqual({ ok: "hi" });
     expect(s.write({ error: 123 })).toEqual({ error: 123 });
