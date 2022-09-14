@@ -23,7 +23,7 @@ URLs), in order to maintain static analysis across the un-typed boundary.
 You usually want to import the whole library:
 
 ```TSX
-import * as Safe from 'safe-portals';
+import * as S from 'safe-portals';
 ```
 
 A safe-portal describes both the serialization and unserialization operation
@@ -33,14 +33,14 @@ boolean, null, arrays of these types, and objects indexed by strings and
 containing only these types). For example:
 
 ```TSX
-Safe.dateIso
+S.dateIso
 ```
 
 Is a safe-portal for a date object. The unserialization operation is called
 'read':
 
 ```TSX
-Safe.dateIso.read("2020-03-04T12:27:41.360Z")
+S.dateIso.read("2020-03-04T12:27:41.360Z")
 > Date Wed Mar 04 2020 12:27:41 GMT+0000 (Greenwich Mean Time)
 ```
 
@@ -48,7 +48,7 @@ The serialization operation is the other side of the
 serialization/unserialization symmetry:
 
 ```TSX
-Safe.dateIso.write(new Date())
+S.dateIso.write(new Date())
 > "2020-03-04T12:27:41.360Z"
 ```
 
@@ -70,45 +70,45 @@ portal.read(JSON.parse(receive()))
 
 #### Basic portal (serializer/deserializer) types
 
-##### Safe.str
+##### S.str
 
 Portal for `string` type.
 
-##### Safe.bool
+##### S.bool
 Portal for `boolean` type.
 
-##### Safe.int
+##### S.int
 Portal for `number` type, truncated to an integer.
 
-##### Safe.float
+##### S.float
 Portal for `number` type, allowing decimals.
 
-##### Safe.dateUnixSecs
+##### S.dateUnixSecs
 Portal for `Date` type, with seconds since the Unix epoch as the
 serialized representation.
 
-##### Safe.dateUnixMillis
+##### S.dateUnixMillis
 Portal for `Date` type, with milliseconds since the Unix epoch as the
 serialized representation.
 
-##### Safe.dateIso
+##### S.dateIso
 Portal for `Date` type, with ISO 8601 as the serialized representation.
 
-##### Safe.uuid
+##### S.uuid
 Portal for `string` type, validating that the string is a uuid.
 
-##### Safe.raw
+##### S.raw
 Portal for `any` type. Allows passthrough to plain JSON
 stringify/parse behavior.
 
-##### Safe.versioned({ schema: t, migrations: [...] })
+##### S.versioned({ schema: t, migrations: [...] })
 Portal for the type given by the `schema` portal, with an ordered list
 of data migration that will be run (first to last) before schema.read(),
 to lazily migrate the data. For example:
 
 ```TS
-const v1 = Safe.versioned({
-	schema: Safe.obj({ x: Safe.dateIso }),
+const v1 = S.versioned({
+	schema: S.obj({ x: S.dateIso }),
 	migrations: []
 });
 ```
@@ -116,46 +116,46 @@ This serializer handles data of the form `{x: new Date() }`. Supposing
 we wished to change the serialized representation from dateIso to
 dateUnixSecs, we could revise our serializer in this way:
 ```TS
-const v2 = Safe.versioned({
-	schema: Safe.obj({ x: Safe.dateUnixSecs }),
+const v2 = S.versioned({
+	schema: S.obj({ x: S.dateUnixSecs }),
 	migrations: [
-		o => ({ x: Safe.dateUnixSecs.write(Safe.dateIso.read(o.x)) })
+		o => ({ x: S.dateUnixSecs.write(S.dateIso.read(o.x)) })
 	]
 });
 ```
 
-##### Safe.optional(t)
+##### S.optional(t)
 Adds optionality to the portal argument `t`. Eg:
 
 ```TS
-Safe.optional(Safe.str)
+S.optional(S.str)
 ```
 is a portal for the type `string | undefined`
 
-##### Safe.nullable(t)
+##### S.nullable(t)
 Adds nullability to the portal argument `t`. Eg:
 
 ```TS
-Safe.nullable(Safe.str)
+S.nullable(S.str)
 ```
 is a portal for the type `string | null`
 
-##### Safe.array(t)
+##### S.array(t)
 Portal for an array of the type that portal `t` handles. Eg:
 
 ```TS
-Safe.array(Safe.float)
+S.array(S.float)
 ```
 is a portal for the type `number[]`
 
-##### Safe.obj({ ... })
+##### S.obj({ ... })
 Portal for arbitrary object types. Eg:
 
 ```TS
-Safe.obj({
-    name: Safe.str,
-    date_of_birth: Safe.dateIso,
-    date_of_death: Safe.optional(Safe.dateIso),
+S.obj({
+    name: S.str,
+    date_of_birth: S.dateIso,
+    date_of_death: S.optional(S.dateIso),
 })
 ```
 Is a portal for the type:
@@ -168,14 +168,14 @@ Is a portal for the type:
 }
 ```
 
-##### Safe.partial_obj({ ... })
+##### S.partial_obj({ ... })
 A fully optional version of `obj`. Eg:
 
 ```TS
-Safe.partial_obj({
-    name: Safe.str,
-    date_of_birth: Safe.dateIso,
-    date_of_death: Safe.optional(Safe.dateIso),
+S.partial_obj({
+    name: S.str,
+    date_of_birth: S.dateIso,
+    date_of_death: S.optional(S.dateIso),
 })
 ```
 Is a portal for the type:
@@ -188,11 +188,11 @@ Is a portal for the type:
 }
 ```
 
-##### Safe.tuple(t1, t2, ...)
+##### S.tuple(t1, t2, ...)
 A portal for an array-as-tuple type. Eg:
 
 ```TS
-Safe.tuple(Safe.str, Safe.float, Safe.dateIso)
+S.tuple(S.str, S.float, S.dateIso)
 ```
 
 Is a portal for the type:
@@ -201,11 +201,11 @@ Is a portal for the type:
 [string, number, Date]
 ```
 
-##### Safe.oneOf(a, b, c, ...)
+##### S.oneOf(a, b, c, ...)
 A portal for a string enum type. Eg:
 
 ```TS
-Safe.oneOf('apple', 'orange', 'pear')
+S.oneOf('apple', 'orange', 'pear')
 ```
 
 Is a portal for the type:
@@ -214,13 +214,13 @@ Is a portal for the type:
 'apple' | 'orange' | 'pear'
 ```
 
-##### Safe.variant(tag1, variant1, tag2, variant2, ...)
+##### S.variant(tag1, variant1, tag2, variant2, ...)
 A portal for a tagged-union type. Eg:
 
 ```TS
-Safe.variant(
-	'circle', Safe.obj({ radius: Safe.float }),
-	'rectangle', Safe.obj({ width: Safe.float, height: Safe.float }),
+S.variant(
+	'circle', S.obj({ radius: S.float }),
+	'rectangle', S.obj({ width: S.float, height: S.float }),
 )
 ```
 
@@ -231,7 +231,7 @@ Is a portal for the type:
 { type: 'rectangle', width: float, height: float }
 ```
 
-##### Safe.Result.result({ ok: t1, error: t2 })
+##### S.Result.result({ ok: t1, error: t2 })
 A (experimental) portal for a 'success or failure' type, allowing a means of passing
 exceptional conditions across serialization boundaries in a type-safe manner.
 
@@ -243,11 +243,11 @@ Consult [result.test.ts](./src/result.test.ts) for example usage.
 You can build type-portals for types like tuples, arrays and objects:
 
 ```TSX
-const personPortal = Safe.obj({
-	name: Safe.str,
-	date_of_birth: Safe.dateIso,
-	date_of_death: Safe.optional(Safe.dateIso),
-	favourite_foods: Safe.array(Safe.str)
+const personPortal = S.obj({
+	name: S.str,
+	date_of_birth: S.dateIso,
+	date_of_death: S.optional(S.dateIso),
+	favourite_foods: S.array(S.str)
 });
 
 personPortal.write({
@@ -275,15 +275,15 @@ url prefix, arguments and response types:
 ```TSX
 export interface Endpoint<Args,Resp> {
   url: string,
-  argumentType: Safe.Type<Args>,
-  responseType: Safe.Type<Resp>,
+  argumentType: S.Type<Args>,
+  responseType: S.Type<Resp>,
   call: (args: Args) => Promise<Resp>
 }
 
 export function makeEndpoint<Args, Resp>(
   url: string,
-  argumentType: Safe.Type<Args>,
-  responseType: Safe.Type<Resp>
+  argumentType: S.Type<Args>,
+  responseType: S.Type<Resp>
 ): Endpoint<Args, Resp>
 {
   return {
@@ -305,16 +305,16 @@ define our endpoints like so:
 export const savePerson = makeEndpoint(
   '/admin/api/journey/save',
   // arguments
-  Safe.obj({
-	guid: Safe.str,
-	name: Safe.str,
-	date_of_birth: Safe.dateIso,
-	date_of_death: Safe.optional(Safe.dateIso),
-	favourite_foods: Safe.array(Safe.str)
+  S.obj({
+	guid: S.str,
+	name: S.str,
+	date_of_birth: S.dateIso,
+	date_of_death: S.optional(S.dateIso),
+	favourite_foods: S.array(S.str)
   }),
   // response (either success (nothing) or an error string)
-  Safe.obj({
-    error: Safe.optional(Safe.str)
+  S.obj({
+    error: S.optional(S.str)
   })
 )
 ```
