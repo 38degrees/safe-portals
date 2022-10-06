@@ -198,14 +198,19 @@ describe('Type-safe composable serializers', () => {
   });
 
   test('int', () => {
-    expect(Safe.int.read(Safe.int.write(123))).toEqual(123);
+    expect(Safe.int.read(Safe.int.write(123.4))).toEqual(123);
+    expect(Safe.int.read(Safe.int.write(-123.4))).toEqual(-123);
     expect(() => Safe.int.write('hi' as any)).toThrowError(Safe.ValidationError);
+    expect(() => Safe.int.write(NaN)).toThrowError(Safe.ValidationError);
+    expect(() => Safe.int.write(Infinity)).toThrowError(Safe.ValidationError);
     expect(() => Safe.int.read("erm")).toThrowError(Safe.ValidationError);
   });
 
   test('float', () => {
     expect(Safe.float.read(Safe.float.write(123.45))).toEqual(123.45);
     expect(() => Safe.float.write('hi' as any)).toThrowError(Safe.ValidationError);
+    expect(() => Safe.float.write(NaN)).toThrowError(Safe.ValidationError);
+    expect(() => Safe.float.write(Infinity)).toThrowError(Safe.ValidationError);
     expect(() => Safe.float.read("erm")).toThrowError(Safe.ValidationError);
   });
 

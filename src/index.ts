@@ -152,8 +152,8 @@ export const int: Type<number> = {
     return isNaN(i) ? validationError('', o) : i;
   },
   write: o => 
-    typeof(o) == 'number'
-    ? o
+    typeof(o) == 'number' && isFinite(o)
+    ? Math.trunc(o)
     : validationError('', o)
 }
 
@@ -165,7 +165,8 @@ export const float: Type<number> = {
     return isNaN(i) ? validationError('', o) : i;
   },
   write: o => 
-    typeof(o) == 'number'
+    // NaN, Infinity can't be represented in JSON, so we reject those
+    typeof(o) == 'number' && isFinite(o)
     ? o
     : validationError('', o)
 }
