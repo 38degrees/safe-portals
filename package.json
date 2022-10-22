@@ -1,6 +1,6 @@
 {
   "name": "safe-portals",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Type-safe symmetric composable serializers",
   "main": "dist/index.js",
   "types": "dist/index.d.js",
