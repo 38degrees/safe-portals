@@ -188,6 +188,29 @@ Is a portal for the type:
 }
 ```
 
+##### S.combine(o1, o2, ...)
+A portal for a combination of obj and/or partial_obj serializers. Eg:
+```TS
+S.combine(
+	S.obj({
+	    name: S.str,
+	    date_of_birth: S.dateIso,
+	}),
+	S.partial_obj({
+	    date_of_death: S.dateIso,
+	})
+)
+```
+
+Is a portal for the type:
+```TS
+{
+	name: string;
+	date_of_birth: Date,
+	date_of_death?: Date
+}
+```
+
 ##### S.tuple(t1, t2, ...)
 A portal for an array-as-tuple type. Eg:
 

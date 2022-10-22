@@ -273,4 +273,15 @@ describe('Type-safe composable serializers', () => {
       Safe.uuid.write('a333f018-c361-4b60-b306-578adf19f397')
     ).toEqual('a333f018-c361-4b60-b306-578adf19f397');
   });
+
+  test('combine', () => {
+    const s = Safe.combine(
+      Safe.obj({ x: Safe.int }),
+      Safe.obj({ y: Safe.str, z: Safe.bool })
+    );
+
+    expect(s.read(s.write({ x: 123, y: "hi", z: false }))).toEqual({ x: 123, y: "hi", z: false });
+    expect(() => s.read({ x: 123, y: 234, z: false })).toThrowError(Safe.ValidationError);
+    expect(s.description()).toEqual('combine(obj({x: int}),obj({y: str, z: bool}))');
+  });
 });

@@ -716,4 +716,22 @@ export function variant(...args) {
   }
 }
 
+export function combine<T0, T1, T2, T3, T4, T5, T6, T7, T8>(t0: Obj<T0>, t1: Obj<T1>, t2: Obj<T2>, t3: Obj<T3>, t4: Obj<T4>, t5: Obj<T5>, t6: Obj<T6>, t7: Obj<T7>, t8: Obj<T8>): Obj<T0 & T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8>;
+export function combine<T0, T1, T2, T3, T4, T5, T6, T7>(t0: Obj<T0>, t1: Obj<T1>, t2: Obj<T2>, t3: Obj<T3>, t4: Obj<T4>, t5: Obj<T5>, t6: Obj<T6>, t7: Obj<T7>): Obj<T0 & T1 & T2 & T3 & T4 & T5 & T6 & T7>;
+export function combine<T0, T1, T2, T3, T4, T5, T6>(t0: Obj<T0>, t1: Obj<T1>, t2: Obj<T2>, t3: Obj<T3>, t4: Obj<T4>, t5: Obj<T5>, t6: Obj<T6>): Obj<T0 & T1 & T2 & T3 & T4 & T5 & T6>;
+export function combine<T0, T1, T2, T3, T4, T5>(t0: Obj<T0>, t1: Obj<T1>, t2: Obj<T2>, t3: Obj<T3>, t4: Obj<T4>, t5: Obj<T5>): Obj<T0 & T1 & T2 & T3 & T4 & T5>;
+export function combine<T0, T1, T2, T3, T4>(t0: Obj<T0>, t1: Obj<T1>, t2: Obj<T2>, t3: Obj<T3>, t4: Obj<T4>): Obj<T0 & T1 & T2 & T3 & T4>;
+export function combine<T0, T1, T2, T3>(t0: Obj<T0>, t1: Obj<T1>, t2: Obj<T2>, t3: Obj<T3>): Obj<T0 & T1 & T2 & T3>;
+export function combine<T0, T1, T2>(t0: Obj<T0>, t1: Obj<T1>, t2: Obj<T2>): Obj<T0 & T1 & T2>;
+export function combine<T0, T1>(t0: Obj<T0>, t1: Obj<T1>): Obj<T0 & T1>;
+// @ts-ignore
+export function combine(...args) {
+    return {
+        container: 'obj',
+        description: () => `combine(${args.map(a => a.description()).join(',')})`,
+        read: (o: any): any => Object.assign({}, ...args.map(_t => _t.read(o))),
+        write: (o: any): any => Object.assign({}, ...args.map(_t => _t.write(o))),
+    }
+}
+
 export * as Result from "./result";
